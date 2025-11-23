@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breathing Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .settings {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .breathing-circle {
+            width: 200px;
+            height: 200px;
+            margin: 30px auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 1s ease-in-out;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .breathing-circle.inhale {
+            transform: scale(1.5);
+        }
+
+        .breathing-circle.exhale {
+            transform: scale(1);
+        }
+
+        .instruction {
+            text-align: center;
+            font-size: 1.8em;
+            color: #fff;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .timer-display {
+            text-align: center;
+            font-size: 3em;
+            color: #333;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .progress {
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            min-width: 200px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .completion-message {
+            text-align: center;
+            font-size: 1.5em;
+            color: #27ae60;
+            margin: 20px 0;
+            font-weight: 600;
+            display: none;
+        }
+
+        .completion-message.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌬️ Breathing Timer</h1>
+        
+        <div class="settings">
+            <div class="input-group">
+                <label for="repetitions">Number of Repetitions:</label>
+                <input type="number" id="repetitions" min="1" max="100" value="18">
+            </div>
+            
+            <div class="input-group">
+                <label for="inhaleTime">Inhale Time (seconds):</label>
+                <input type="number" id="inhaleTime" min="1" max="30" value="4">
+            </div>
+            
+            <div class="input-group">
+                <label for="exhaleTime">Exhale Time (seconds):</label>
+                <input type="number" id="exhaleTime" min="1" max="30" value="8">
+            </div>
+        </div>
+
+        <div class="breathing-circle" id="breathingCircle">
+            <div class="instruction" id="instruction"></div>
+        </div>
+
+        <div class="timer-display" id="timerDisplay">--</div>
+        <div class="progress" id="progress">0 / 0</div>
+        <div class="completion-message" id="completionMessage">✨ Session Complete! ✨</div>
+
+        <div class="controls">
+            <button class="start-btn" id="controlBtn">Start</button>
+        </div>
+    </div>
+
+    <script>
+        let currentRep = 0;
+        let totalReps = 18;
+        let inhaleSeconds = 4;
+        let exhaleSeconds = 8;
+        let isRunning = false;
+        let currentPhase = 'ready'; // ready, inhale, exhale
+        let countdown = 0;
+        let countdownInterval = null;
+        let phaseTimeout = null;
+
+        const breathingCircle = document.getElementById('breathingCircle');
+        const instruction = document.getElementById('instruction');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const progress = document.getElementById('progress');
+        const completionMessage = document.getElementById('completionMessage');
+        const controlBtn = document.getElementById('controlBtn');
+        const repsInput = document.getElementById('repetitions');
+        const inhaleInput = document.getElementById('inhaleTime');
+        const exhaleInput = document.getElementById('exhaleTime');
+
+        // Create audio context for the ding sound
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playDing() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Create a pleasant bell-like sound
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function updateSettings() {
+            totalReps = parseInt(repsInput.value) || 18;
+            inhaleSeconds = parseInt(inhaleInput.value) || 4;
+            exhaleSeconds = parseInt(exhaleInput.value) || 8;
+        }
+
+        function updateDisplay() {
+            timerDisplay.textContent = countdown;
+            progress.textContent = `${currentRep} / ${totalReps}`;
+        }
+
+        function startCountdown(duration) {
+            countdown = 1;
+            updateDisplay();
+            
+            let elapsed = 1;
+            countdownInterval = setInterval(() => {
+                elapsed++;
+                countdown = elapsed;
+                updateDisplay();
+                
+                if (elapsed >= duration) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+
+        function startInhale() {
+            currentPhase = 'inhale';
+            instruction.textContent = 'Inhale';
+            breathingCircle.classList.remove('exhale');
+            breathingCircle.classList.add('inhale');
+            
+            startCountdown(inhaleSeconds);
+            
+            phaseTimeout = setTimeout(() => {
+                startExhale();
+            }, inhaleSeconds * 1000);
+        }
+
+        function startExhale() {
+            currentPhase = 'exhale';
+            instruction.textContent = 'Exhale';
+            breathingCircle.classList.remove('inhale');
+            breathingCircle.classList.add('exhale');
+            
+            startCountdown(exhaleSeconds);
+            
+            phaseTimeout = setTimeout(() => {
+                currentRep++;
+                playDing(); // Play sound at end of cycle
+                
+                if (currentRep >= totalReps) {
+                    completeSession();
+                } else {
+                    startInhale();
+                }
+            }, exhaleSeconds * 1000);
+        }
+
+        function completeSession() {
+            isRunning = false;
+            currentPhase = 'ready';
+            instruction.textContent = 'Complete!';
+            breathingCircle.classList.remove('inhale', 'exhale');
+            timerDisplay.textContent = '✓';
+            completionMessage.classList.add('show');
+            controlBtn.textContent = 'Start';
+            enableInputs();
+        }
+
+        function start() {
+            if (isRunning) return;
+            
+            updateSettings();
+            isRunning = true;
+            currentRep = 0;
+            completionMessage.classList.remove('show');
+            
+            controlBtn.textContent = 'Stop';
+            disableInputs();
+            
+            updateDisplay();
+            
+            // Start with first inhale after a brief moment
+            setTimeout(() => {
+                if (isRunning) {
+                    startInhale();
+                }
+            }, 500);
+        }
+
+        function stop() {
+            isRunning = false;
+            clearInterval(countdownInterval);
+            clearTimeout(phaseTimeout);
+            
+            instruction.textContent = 'Paused';
+            breathingCircle.classList.remove('inhale', 'exhale');
+            
+            controlBtn.textContent = 'Start';
+            enableInputs();
+        }
+
+        function reset() {
+            stop();
+            currentRep = 0;
+            countdown = 0;
+            currentPhase = 'ready';
+            instruction.textContent = 'Ready';
+            timerDisplay.textContent = '--';
+            progress.textContent = '0 / 0';
+            completionMessage.classList.remove('show');
+            breathingCircle.classList.remove('inhale', 'exhale');
+            updateSettings();
+            progress.textContent = `0 / ${totalReps}`;
+        }
+
+        function disableInputs() {
+            repsInput.disabled = true;
+            inhaleInput.disabled = true;
+            exhaleInput.disabled = true;
+        }
+
+        function enableInputs() {
+            repsInput.disabled = false;
+            inhaleInput.disabled = false;
+            exhaleInput.disabled = false;
+        }
+
+        function toggleControl() {
+            if (isRunning) {
+                stop();
+            } else {
+                start();
+            }
+        }
+
+        controlBtn.addEventListener('click', toggleControl);
+        controlBtn.addEventListener('dblclick', reset);
+
+        // Initialize display
+        updateSettings();
+        progress.textContent = `0 / ${totalReps}`;
+    </script>
+</body>
+</html>
