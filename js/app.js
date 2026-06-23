@@ -88,11 +88,14 @@
 
   // ---- Text-to-speech ----------------------------------------------------
   let voices = [];
+  let voicePollsLeft = 0;
 
   function loadVoices() {
     if (!ttsSupported) return;
-    voices = window.speechSynthesis.getVoices();
-    const saved = el.voiceSelect.value;
+    const list = window.speechSynthesis.getVoices();
+    if (!list.length) return;          // nothing yet; a later poll/event will retry
+    voices = list;
+    const saved = el.voiceSelect.value || el.voiceSelect.dataset.pending;
     el.voiceSelect.innerHTML = "";
     voices.forEach((v, i) => {
       const opt = document.createElement("option");
@@ -101,6 +104,20 @@
       el.voiceSelect.appendChild(opt);
     });
     if (saved && voices[saved]) el.voiceSelect.value = saved;
+  }
+
+  // Mobile browsers (notably iOS Safari) populate getVoices() asynchronously
+  // and don't always fire voiceschanged, so poll for a short while until the
+  // list appears.
+  function refreshVoices() {
+    if (!ttsSupported) return;
+    loadVoices();
+    if (voices.length) return;
+    voicePollsLeft = 20;
+    const timer = setInterval(() => {
+      loadVoices();
+      if (voices.length || --voicePollsLeft <= 0) clearInterval(timer);
+    }, 250);
   }
 
   function speak(text) {
@@ -245,8 +262,12 @@
     el.controlBtn.textContent = "Stop";
     setControlsDisabled(true);
 
-    // A user gesture (the Start click) is required to unlock audio on mobile.
-    if (ttsSupported) window.speechSynthesis.cancel();
+    // A user gesture (the Start click) is required to unlock audio on mobile;
+    // it's also when iOS first exposes the voice list, so refresh it here.
+    if (ttsSupported) {
+      window.speechSynthesis.cancel();
+      refreshVoices();
+    }
 
     enterPhase(schedule[0]);
     tickTimer = setInterval(tick, 100);
@@ -456,7 +477,7 @@
       el.voiceToggle.disabled = true;
       document.getElementById("voiceUnsupported").style.display = "block";
     } else {
-      loadVoices();
+      refreshVoices();
       window.speechSynthesis.onvoiceschanged = () => {
         loadVoices();
         const pending = el.voiceSelect.dataset.pending;
@@ -477,7 +498,8 @@
     });
     el.voiceToggle.addEventListener("change", () => {
       syncVoiceSettingsVisibility();
-      if (!el.voiceToggle.checked) cancelSpeech();
+      if (el.voiceToggle.checked) refreshVoices();
+      else cancelSpeech();
       savePrefs();
     });
     [el.voiceSelect, el.voiceCountdown, el.voiceRate, el.voiceVolume, el.dingToggle,
