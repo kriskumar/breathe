@@ -330,6 +330,21 @@ button {
     margin-top: 14px;
 }
 
+.donate {
+    text-align: center;
+    font-size: 0.75em;
+    margin-top: 6px;
+}
+
+.donate a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.donate a:hover {
+    text-decoration: underline;
+}
+
 /* Phones: tighten spacing and let the controls share the row. */
 @media (max-width: 480px) {
     body {

@@ -25,7 +25,6 @@
     voiceSettings: document.getElementById("voiceSettings"),
     voiceSelect: document.getElementById("voiceSelect"),
     voiceCountdown: document.getElementById("voiceCountdown"),
-    voiceLead: document.getElementById("voiceLead"),
     voiceRate: document.getElementById("voiceRate"),
     voiceVolume: document.getElementById("voiceVolume"),
     dingToggle: document.getElementById("dingToggle"),
@@ -41,7 +40,6 @@
   let stepIndex = 0;      // index into `schedule`
   let phaseEndTime = 0;   // performance.now() timestamp when current phase ends
   let lastSpokenCount = null;
-  let nextCueSpoken = false; // whether the upcoming phase has been pre-announced
   let tickTimer = null;
   let totalCycles = 0;
   let currentCycle = 0;
@@ -256,7 +254,6 @@
 
   function enterPhase(step) {
     lastSpokenCount = null;
-    nextCueSpoken = false;
     phaseEndTime = performance.now() + step.seconds * 1000;
 
     if (step.cycle > 0) currentCycle = step.cycle;
@@ -266,16 +263,12 @@
     setCircleScale(step.key, step.seconds);
     el.instruction.textContent = step.label;
 
-    // Voice cue. With a lead time set, every phase except the first is
-    // pre-announced near the end of the previous phase (see tick), so only
-    // speak here when there is no lead or this is the opening phase.
-    if (getLead() <= 0 || stepIndex === 0) speak(step.say);
+    // Flush any speech still queued from the previous phase so the voice can't
+    // fall behind the on-screen timer, then announce this phase by name.
+    if (ttsSupported) window.speechSynthesis.cancel();
+    speak(step.say);
 
     updateDisplay(Math.ceil(step.seconds));
-  }
-
-  function getLead() {
-    return clampNum(el.voiceLead.value, 0, 10, 3);
   }
 
   // Drive the circle to expand on inhale, contract on exhale, and hold size
@@ -303,15 +296,8 @@
 
     updateDisplay(remaining);
 
-    // Pre-announce the next phase early to offset speech-synthesis latency.
-    const lead = getLead();
-    if (lead > 0 && !nextCueSpoken && remainingMs <= lead * 1000) {
-      nextCueSpoken = true;
-      const next = schedule[stepIndex + 1];
-      if (next) speak(next.say);
-    }
-
-    // Speak the countdown once per integer second.
+    // Speak the countdown once per integer second, keeping it in lock-step
+    // with the visible timer.
     if (el.voiceCountdown.checked && remaining > 0 && remaining !== lastSpokenCount) {
       lastSpokenCount = remaining;
       speak(String(remaining));
@@ -397,7 +383,6 @@
     currentCycle = 0;
     totalCycles = 0;
     lastSpokenCount = null;
-    nextCueSpoken = false;
     el.circle.className = "breathing-circle";
     el.circle.style.transform = "scale(1)";
     el.instruction.textContent = "Ready";
@@ -416,7 +401,6 @@
       voiceOn: el.voiceToggle.checked,
       voiceIndex: el.voiceSelect.value,
       countdown: el.voiceCountdown.checked,
-      lead: el.voiceLead.value,
       rate: el.voiceRate.value,
       volume: el.voiceVolume.value,
       ding: el.dingToggle.checked,
@@ -444,7 +428,6 @@
     if (prefs.level) level = prefs.level;
     if (typeof prefs.voiceOn === "boolean") el.voiceToggle.checked = prefs.voiceOn;
     if (typeof prefs.countdown === "boolean") el.voiceCountdown.checked = prefs.countdown;
-    if (prefs.lead != null) el.voiceLead.value = prefs.lead;
     if (prefs.rate) el.voiceRate.value = prefs.rate;
     if (prefs.volume) el.voiceVolume.value = prefs.volume;
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
@@ -497,7 +480,7 @@
       if (!el.voiceToggle.checked) cancelSpeech();
       savePrefs();
     });
-    [el.voiceSelect, el.voiceCountdown, el.voiceLead, el.voiceRate, el.voiceVolume, el.dingToggle,
+    [el.voiceSelect, el.voiceCountdown, el.voiceRate, el.voiceVolume, el.dingToggle,
      el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
       .forEach((node) => node.addEventListener("change", savePrefs));
   }
