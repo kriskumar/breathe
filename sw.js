@@ -1,5 +1,5 @@
 /* Service worker — caches the app shell so it works offline. */
-const CACHE = "breathe-v4";
+const CACHE = "breathe-v5";
 const ASSETS = [
   "./",
   "./index.html",
