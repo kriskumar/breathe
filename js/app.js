@@ -20,10 +20,12 @@
     progress: document.getElementById("progress"),
     completion: document.getElementById("completionMessage"),
     controlBtn: document.getElementById("controlBtn"),
+    resetBtn: document.getElementById("resetBtn"),
     voiceToggle: document.getElementById("voiceToggle"),
     voiceSettings: document.getElementById("voiceSettings"),
     voiceSelect: document.getElementById("voiceSelect"),
     voiceCountdown: document.getElementById("voiceCountdown"),
+    voiceLead: document.getElementById("voiceLead"),
     voiceRate: document.getElementById("voiceRate"),
     voiceVolume: document.getElementById("voiceVolume"),
     dingToggle: document.getElementById("dingToggle"),
@@ -39,6 +41,7 @@
   let stepIndex = 0;      // index into `schedule`
   let phaseEndTime = 0;   // performance.now() timestamp when current phase ends
   let lastSpokenCount = null;
+  let nextCueSpoken = false; // whether the upcoming phase has been pre-announced
   let tickTimer = null;
   let totalCycles = 0;
   let currentCycle = 0;
@@ -46,21 +49,43 @@
   // ---- Audio (ding) ------------------------------------------------------
   let audioContext = null;
 
+  // A soft zen / singing-bowl bell: a fundamental plus a few inharmonic
+  // partials, each with its own gentle attack and long exponential decay.
   function playDing() {
     if (!el.dingToggle.checked) return;
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
-    osc.frequency.setValueAtTime(800, audioContext.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-    osc.start(audioContext.currentTime);
-    osc.stop(audioContext.currentTime + 0.5);
+    if (audioContext.state === "suspended") audioContext.resume();
+
+    const ctx = audioContext;
+    const now = ctx.currentTime;
+
+    const master = ctx.createGain();
+    master.gain.value = 0.5;
+    master.connect(ctx.destination);
+
+    const base = 432; // a calm, low fundamental
+    const partials = [
+      { ratio: 1.0,  gain: 1.0,  decay: 3.6 },
+      { ratio: 2.01, gain: 0.55, decay: 2.8 },
+      { ratio: 2.76, gain: 0.35, decay: 2.0 },
+      { ratio: 5.40, gain: 0.18, decay: 1.4 },
+    ];
+
+    partials.forEach((p) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = base * p.ratio;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(p.gain, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + p.decay);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(now);
+      osc.stop(now + p.decay + 0.1);
+    });
   }
 
   // ---- Text-to-speech ----------------------------------------------------
@@ -231,6 +256,7 @@
 
   function enterPhase(step) {
     lastSpokenCount = null;
+    nextCueSpoken = false;
     phaseEndTime = performance.now() + step.seconds * 1000;
 
     if (step.cycle > 0) currentCycle = step.cycle;
@@ -240,10 +266,16 @@
     setCircleScale(step.key, step.seconds);
     el.instruction.textContent = step.label;
 
-    // Voice cue for the phase
-    speak(step.say);
+    // Voice cue. With a lead time set, every phase except the first is
+    // pre-announced near the end of the previous phase (see tick), so only
+    // speak here when there is no lead or this is the opening phase.
+    if (getLead() <= 0 || stepIndex === 0) speak(step.say);
 
     updateDisplay(Math.ceil(step.seconds));
+  }
+
+  function getLead() {
+    return clampNum(el.voiceLead.value, 0, 10, 3);
   }
 
   // Drive the circle to expand on inhale, contract on exhale, and hold size
@@ -270,6 +302,14 @@
     const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
 
     updateDisplay(remaining);
+
+    // Pre-announce the next phase early to offset speech-synthesis latency.
+    const lead = getLead();
+    if (lead > 0 && !nextCueSpoken && remainingMs <= lead * 1000) {
+      nextCueSpoken = true;
+      const next = schedule[stepIndex + 1];
+      if (next) speak(next.say);
+    }
 
     // Speak the countdown once per integer second.
     if (el.voiceCountdown.checked && remaining > 0 && remaining !== lastSpokenCount) {
@@ -346,6 +386,28 @@
     else startSession();
   }
 
+  // Stop any running session and return the UI to its initial, ready state
+  // without reloading the page.
+  function resetSession() {
+    stopTimers();
+    cancelSpeech();
+    isRunning = false;
+    schedule = [];
+    stepIndex = 0;
+    currentCycle = 0;
+    totalCycles = 0;
+    lastSpokenCount = null;
+    nextCueSpoken = false;
+    el.circle.className = "breathing-circle";
+    el.circle.style.transform = "scale(1)";
+    el.instruction.textContent = "Ready";
+    el.circleCount.textContent = "--";
+    el.progress.textContent = "Cycle 0 / 0";
+    el.completion.classList.remove("show");
+    el.controlBtn.textContent = "Start";
+    setControlsDisabled(false);
+  }
+
   // ---- Preferences -------------------------------------------------------
   function savePrefs() {
     const prefs = {
@@ -354,6 +416,7 @@
       voiceOn: el.voiceToggle.checked,
       voiceIndex: el.voiceSelect.value,
       countdown: el.voiceCountdown.checked,
+      lead: el.voiceLead.value,
       rate: el.voiceRate.value,
       volume: el.voiceVolume.value,
       ding: el.dingToggle.checked,
@@ -381,6 +444,7 @@
     if (prefs.level) level = prefs.level;
     if (typeof prefs.voiceOn === "boolean") el.voiceToggle.checked = prefs.voiceOn;
     if (typeof prefs.countdown === "boolean") el.voiceCountdown.checked = prefs.countdown;
+    if (prefs.lead != null) el.voiceLead.value = prefs.lead;
     if (prefs.rate) el.voiceRate.value = prefs.rate;
     if (prefs.volume) el.voiceVolume.value = prefs.volume;
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
@@ -423,6 +487,7 @@
 
     // Wiring
     el.controlBtn.addEventListener("click", toggleControl);
+    el.resetBtn.addEventListener("click", resetSession);
     el.program.addEventListener("change", onProgramChange);
     el.levelControl.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => setLevel(b.dataset.level));
@@ -432,7 +497,7 @@
       if (!el.voiceToggle.checked) cancelSpeech();
       savePrefs();
     });
-    [el.voiceSelect, el.voiceCountdown, el.voiceRate, el.voiceVolume, el.dingToggle,
+    [el.voiceSelect, el.voiceCountdown, el.voiceLead, el.voiceRate, el.voiceVolume, el.dingToggle,
      el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
       .forEach((node) => node.addEventListener("change", savePrefs));
   }

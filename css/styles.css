@@ -304,12 +304,23 @@ button {
 .start-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    min-width: 200px;
+    min-width: 160px;
 }
 
 .start-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.reset-btn {
+    background: #fff;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.reset-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.25);
 }
 
 .hint {
