@@ -1,0 +1,320 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 520px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 24px;
+    font-size: 2em;
+}
+
+.settings {
+    margin-bottom: 24px;
+}
+
+.input-group {
+    margin-bottom: 18px;
+}
+
+.input-row {
+    display: flex;
+    gap: 12px;
+}
+
+.input-row .input-group {
+    flex: 1;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+input[type="number"],
+select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    background: #fff;
+    transition: border-color 0.3s;
+}
+
+input[type="number"]:focus,
+select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+input:disabled,
+select:disabled {
+    background: #f3f3f3;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.program-description {
+    font-size: 0.9em;
+    color: #777;
+    margin: -8px 0 18px;
+    min-height: 1.2em;
+    line-height: 1.4;
+}
+
+/* Level segmented control */
+.level-control {
+    display: flex;
+    gap: 8px;
+}
+
+.level-control button {
+    flex: 1;
+    min-width: 0;
+    padding: 10px;
+    font-size: 14px;
+    border: 2px solid #ddd;
+    background: #fff;
+    color: #555;
+    border-radius: 8px;
+    cursor: pointer;
+    text-transform: none;
+    transition: all 0.2s;
+}
+
+.level-control button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    color: #fff;
+}
+
+/* Custom timing inputs, shown only for the Custom program */
+.custom-only {
+    display: none;
+}
+
+body.custom-mode .custom-only {
+    display: block;
+}
+
+/* Voice / audio options */
+.options {
+    border-top: 1px solid #eee;
+    padding-top: 18px;
+    margin-bottom: 24px;
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.toggle-row label {
+    margin-bottom: 0;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #ccc;
+    border-radius: 28px;
+    transition: 0.3s;
+}
+
+.slider::before {
+    content: "";
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+.switch input:checked + .slider {
+    background: #667eea;
+}
+
+.switch input:checked + .slider::before {
+    transform: translateX(24px);
+}
+
+.voice-settings {
+    margin-top: 6px;
+}
+
+.voice-settings.hidden {
+    display: none;
+}
+
+.range-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.range-row label {
+    margin-bottom: 0;
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.range-row input[type="range"] {
+    flex: 1;
+}
+
+/* Breathing visualizer */
+.breathing-circle {
+    width: 220px;
+    height: 220px;
+    margin: 24px auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: scale(1);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+/* Phase colors */
+.breathing-circle.phase-inhale {
+    background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+}
+
+.breathing-circle.phase-exhale {
+    background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
+}
+
+.breathing-circle.phase-retain,
+.breathing-circle.phase-sustain {
+    background: linear-gradient(135deg, #c471f5 0%, #fa71cd 100%);
+}
+
+.breathing-circle.phase-prep {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.circle-inner {
+    text-align: center;
+    color: #fff;
+}
+
+.instruction {
+    font-size: 1.6em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.circle-count {
+    font-size: 2.6em;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+.progress {
+    text-align: center;
+    font-size: 1.2em;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.completion-message {
+    text-align: center;
+    font-size: 1.5em;
+    color: #27ae60;
+    margin: 20px 0;
+    font-weight: 600;
+    display: none;
+}
+
+.completion-message.show {
+    display: block;
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    text-transform: uppercase;
+}
+
+.start-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    min-width: 200px;
+}
+
+.start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.hint {
+    text-align: center;
+    font-size: 0.8em;
+    color: #999;
+    margin-top: 14px;
+}
