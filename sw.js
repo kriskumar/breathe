@@ -1,5 +1,6 @@
-/* Service worker — caches the app shell so it works offline. */
-const CACHE = "breathe-v12";
+/* Service worker — network-first so updates land on reload, with an offline
+ * cache fallback. */
+const CACHE = "breathe-v14";
 const ASSETS = [
   "./",
   "./index.html",
@@ -9,6 +10,7 @@ const ASSETS = [
   "./manifest.webmanifest",
   "./icon.svg",
   "./icon-180.png",
+  "./mp3/aum.mp3",
 ];
 
 self.addEventListener("install", (event) => {
@@ -25,21 +27,24 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Network-first: always try the network so a fresh deploy is picked up on the
+// next load; fall back to the cache only when offline. This avoids the old
+// cache-first behaviour that could pin users to a stale app.js.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  if (new URL(event.request.url).origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          // Cache same-origin GET responses for later offline use.
-          if (response.ok && new URL(event.request.url).origin === self.location.origin) {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(() =>
+        caches.match(event.request).then((cached) => cached || caches.match("./index.html"))
+      )
   );
 });
