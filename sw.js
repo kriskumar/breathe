@@ -1,6 +1,6 @@
 /* Service worker — network-first so updates land on reload, with an offline
  * cache fallback. */
-const CACHE = "breathe-v13";
+const CACHE = "breathe-v14";
 const ASSETS = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const ASSETS = [
   "./manifest.webmanifest",
   "./icon.svg",
   "./icon-180.png",
+  "./mp3/aum.mp3",
 ];
 
 self.addEventListener("install", (event) => {

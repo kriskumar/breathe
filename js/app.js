@@ -43,6 +43,8 @@
   let tickTimer = null;
   let totalCycles = 0;
   let currentCycle = 0;
+  let aumAudio = null;    // ~59s Aum chant that opens the calming programs
+  let inIntro = false;    // true while the Aum intro is playing
 
   // ---- Audio (ding) ------------------------------------------------------
   let audioContext = null;
@@ -293,8 +295,50 @@
       refreshVoices();
     }
 
+    if (usesAum()) {
+      playAumIntro();
+    } else {
+      beginBreathing();
+    }
+  }
+
+  // The calming programs open with the ~59s Aum chant before any breathing.
+  const AUM_PROGRAMS = ["calming1", "calming2", "calming3"];
+  function usesAum() {
+    return AUM_PROGRAMS.indexOf(el.program.value) !== -1;
+  }
+
+  function playAumIntro() {
+    inIntro = true;
+    el.circle.className = "breathing-circle phase-prep";
+    el.circle.style.transition = "transform 0.3s ease-in-out";
+    el.circle.style.transform = "scale(1)";
+    el.instruction.textContent = "🕉️ Aum";
+    el.circleCount.textContent = "";
+    el.progress.textContent = "Aum…";
+
+    if (!aumAudio) aumAudio = new Audio("mp3/aum.mp3");
+    aumAudio.currentTime = 0;
+    aumAudio.onended = () => { inIntro = false; if (isRunning) beginBreathing(); };
+    const played = aumAudio.play();
+    // If playback is blocked (e.g. autoplay policy), go straight to breathing.
+    if (played && played.catch) {
+      played.catch(() => { inIntro = false; if (isRunning) beginBreathing(); });
+    }
+  }
+
+  function beginBreathing() {
+    if (!isRunning) return;
     enterPhase(schedule[0]);
     tickTimer = setInterval(tick, 100);
+  }
+
+  function stopAum() {
+    inIntro = false;
+    if (aumAudio) {
+      aumAudio.onended = null;
+      aumAudio.pause();
+    }
   }
 
   function enterPhase(step) {
@@ -374,6 +418,7 @@
 
   function completeSession() {
     stopTimers();
+    stopAum();
     isRunning = false;
     el.circle.className = "breathing-circle";
     el.circle.style.transform = "scale(1)";
@@ -388,6 +433,7 @@
 
   function stopSession() {
     stopTimers();
+    stopAum();
     cancelSpeech();
     isRunning = false;
     el.circle.className = "breathing-circle";
@@ -421,6 +467,7 @@
   // without reloading the page.
   function resetSession() {
     stopTimers();
+    stopAum();
     cancelSpeech();
     isRunning = false;
     schedule = [];
