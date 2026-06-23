@@ -332,12 +332,12 @@ button {
 
 .donate {
     text-align: center;
-    font-size: 0.75em;
-    margin-top: 6px;
+    font-size: 0.62em;
+    margin-top: 4px;
 }
 
 .donate a {
-    color: #667eea;
+    color: #999;
     text-decoration: none;
 }
 
