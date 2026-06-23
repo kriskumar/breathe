@@ -287,6 +287,7 @@
     el.completion.classList.remove("show");
     el.controlBtn.textContent = "Stop";
     setControlsDisabled(true);
+    acquireWakeLock();
 
     // A user gesture (the Start click) is required to unlock audio on mobile;
     // it's also when iOS first exposes the voice list, so refresh it here.
@@ -319,7 +320,13 @@
 
     if (!aumAudio) aumAudio = new Audio("mp3/aum.mp3");
     aumAudio.currentTime = 0;
-    aumAudio.onended = () => { inIntro = false; if (isRunning) beginBreathing(); };
+    aumAudio.onended = () => {
+      // Fully release the media element so iOS hands the audio session back to
+      // speechSynthesis before the first spoken cue.
+      inIntro = false;
+      aumAudio.pause();
+      if (isRunning) beginBreathing();
+    };
     const played = aumAudio.play();
     // If playback is blocked (e.g. autoplay policy), go straight to breathing.
     if (played && played.catch) {
@@ -338,6 +345,27 @@
     if (aumAudio) {
       aumAudio.onended = null;
       aumAudio.pause();
+    }
+  }
+
+  // ---- Screen Wake Lock --------------------------------------------------
+  // Keep the screen awake during a session so iOS doesn't auto-lock and
+  // suspend the timers, audio and speech. (Manual power-button locks can't
+  // be overridden.)
+  let wakeLock = null;
+
+  async function acquireWakeLock() {
+    if (!("wakeLock" in navigator)) return;
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    } catch (e) { /* denied (e.g. low battery / not visible) — ignore */ }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release().catch(() => {});
+      wakeLock = null;
     }
   }
 
@@ -419,6 +447,7 @@
   function completeSession() {
     stopTimers();
     stopAum();
+    releaseWakeLock();
     isRunning = false;
     el.circle.className = "breathing-circle";
     el.circle.style.transform = "scale(1)";
@@ -434,6 +463,7 @@
   function stopSession() {
     stopTimers();
     stopAum();
+    releaseWakeLock();
     cancelSpeech();
     isRunning = false;
     el.circle.className = "breathing-circle";
@@ -468,6 +498,7 @@
   function resetSession() {
     stopTimers();
     stopAum();
+    releaseWakeLock();
     cancelSpeech();
     isRunning = false;
     schedule = [];
@@ -580,6 +611,14 @@
     [el.voiceSelect, el.voiceCountdown, el.voiceRate, el.voiceVolume, el.dingToggle,
      el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
       .forEach((node) => node.addEventListener("change", savePrefs));
+
+    // iOS releases the wake lock when the tab is hidden; re-acquire it when the
+    // user returns mid-session.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && isRunning && !wakeLock) {
+        acquireWakeLock();
+      }
+    });
   }
 
   // Register the service worker for offline use.
