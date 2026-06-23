@@ -93,7 +93,16 @@
   function loadVoices() {
     if (!ttsSupported) return;
     const list = window.speechSynthesis.getVoices();
-    if (!list.length) return;          // nothing yet; a later poll/event will retry
+    if (!list.length) {
+      // iOS may not expose named voices yet; show a default so it's not blank.
+      if (!el.voiceSelect.options.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "System default voice";
+        el.voiceSelect.appendChild(opt);
+      }
+      return;                            // a later poll/event will fill real voices
+    }
     voices = list;
     const saved = el.voiceSelect.value || el.voiceSelect.dataset.pending;
     el.voiceSelect.innerHTML = "";
