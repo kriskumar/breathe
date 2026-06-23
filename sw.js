@@ -1,5 +1,5 @@
 /* Service worker — caches the app shell so it works offline. */
-const CACHE = "breathe-v1";
+const CACHE = "breathe-v9";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,6 +7,8 @@ const ASSETS = [
   "./js/programs.js",
   "./js/app.js",
   "./manifest.webmanifest",
+  "./icon.svg",
+  "./icon-180.png",
 ];
 
 self.addEventListener("install", (event) => {

@@ -304,7 +304,7 @@ button {
 .start-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    min-width: 200px;
+    min-width: 160px;
 }
 
 .start-btn:hover {
@@ -312,9 +312,61 @@ button {
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
+.reset-btn {
+    background: #fff;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.reset-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.25);
+}
+
 .hint {
     text-align: center;
     font-size: 0.8em;
     color: #999;
     margin-top: 14px;
+}
+
+/* Phones: tighten spacing and let the controls share the row. */
+@media (max-width: 480px) {
+    body {
+        padding: 12px;
+    }
+
+    .container {
+        padding: 22px;
+        border-radius: 16px;
+    }
+
+    h1 {
+        font-size: 1.6em;
+        margin-bottom: 18px;
+    }
+
+    .breathing-circle {
+        width: 180px;
+        height: 180px;
+        margin: 18px auto;
+    }
+
+    .controls {
+        gap: 10px;
+    }
+
+    .controls button {
+        flex: 1;
+        min-width: 0;
+        padding: 14px 12px;
+    }
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+    .start-btn:hover,
+    .reset-btn:hover {
+        transform: none;
+    }
 }
