@@ -329,3 +329,44 @@ button {
     color: #999;
     margin-top: 14px;
 }
+
+/* Phones: tighten spacing and let the controls share the row. */
+@media (max-width: 480px) {
+    body {
+        padding: 12px;
+    }
+
+    .container {
+        padding: 22px;
+        border-radius: 16px;
+    }
+
+    h1 {
+        font-size: 1.6em;
+        margin-bottom: 18px;
+    }
+
+    .breathing-circle {
+        width: 180px;
+        height: 180px;
+        margin: 18px auto;
+    }
+
+    .controls {
+        gap: 10px;
+    }
+
+    .controls button {
+        flex: 1;
+        min-width: 0;
+        padding: 14px 12px;
+    }
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+    .start-btn:hover,
+    .reset-btn:hover {
+        transform: none;
+    }
+}
