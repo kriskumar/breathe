@@ -120,6 +120,21 @@
     }, 250);
   }
 
+  // iOS only exposes the voice list after the speech engine has been used once
+  // inside a user gesture. Warm it up with a silent utterance on the first
+  // interaction so the dropdown can fill before a session starts.
+  let voicesWarmed = false;
+  function warmUpVoices() {
+    if (voicesWarmed || !ttsSupported) return;
+    voicesWarmed = true;
+    try {
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* ignore */ }
+    refreshVoices();
+  }
+
   function speak(text) {
     if (!ttsSupported || !el.voiceToggle.checked || !text) return;
     const u = new SpeechSynthesisUtterance(text);
@@ -488,6 +503,10 @@
     onProgramChange();
     setLevel(level);
     syncVoiceSettingsVisibility();
+
+    // Warm up the speech engine on the very first user interaction (iOS).
+    ["pointerdown", "touchstart", "click"].forEach((evt) =>
+      window.addEventListener(evt, warmUpVoices, { once: true, passive: true }));
 
     // Wiring
     el.controlBtn.addEventListener("click", toggleControl);
