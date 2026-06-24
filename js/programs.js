@@ -15,6 +15,18 @@
  */
 const PROGRAMS = [
   {
+    id: "simple-mind",
+    name: "Simple Mind",
+    description: "A short, gentle 1:2 breath to settle the mind, closing with Aum.",
+    unit: 3,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [1, 0, 2, 0], cycle: 10 },
+      medium:   { ratio: [1, 0, 2, 0], cycle: 10 },
+      advanced: { ratio: [1, 0, 2, 0], cycle: 10 },
+    },
+  },
+  {
     id: "clear-mind",
     name: "Clear Mind",
     description: "Short inhale with a long, slow exhale to clear and settle the mind.",
