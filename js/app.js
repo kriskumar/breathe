@@ -279,6 +279,7 @@
     schedule = buildSchedule(settings);
     if (schedule.length === 0) return;
 
+    stopAum();  // cancel a closing Aum from a previous session if still playing
     totalCycles = settings.cycles;
     currentCycle = 0;
     stepIndex = 0;
@@ -296,21 +297,23 @@
       refreshVoices();
     }
 
-    if (usesAum()) {
+    if (usesAumIntro()) {
       playAumIntro();
     } else {
       beginBreathing();
     }
   }
 
-  // The calming programs open with the ~59s Aum chant before any breathing.
-  const AUM_PROGRAMS = ["calming1", "calming2", "calming3"];
-  function usesAum() {
-    return AUM_PROGRAMS.indexOf(el.program.value) !== -1;
-  }
+  // Calming programs open with the ~59s Aum chant; Simple Mind closes with it.
+  const AUM_INTRO_PROGRAMS = ["calming1", "calming2", "calming3"];
+  const AUM_OUTRO_PROGRAMS = ["simple-mind"];
+  function usesAumIntro() { return AUM_INTRO_PROGRAMS.indexOf(el.program.value) !== -1; }
+  function usesAumOutro() { return AUM_OUTRO_PROGRAMS.indexOf(el.program.value) !== -1; }
 
-  function playAumIntro() {
-    inIntro = true;
+  // Show the 🕉️ Aum state and play the chant, calling onEnd when it finishes
+  // (or immediately if playback is blocked). The media element is fully released
+  // so iOS hands the audio session back to speechSynthesis.
+  function playAum(onEnd) {
     el.circle.className = "breathing-circle phase-prep";
     el.circle.style.transition = "transform 0.3s ease-in-out";
     el.circle.style.transform = "scale(1)";
@@ -320,18 +323,14 @@
 
     if (!aumAudio) aumAudio = new Audio("mp3/aum.mp3");
     aumAudio.currentTime = 0;
-    aumAudio.onended = () => {
-      // Fully release the media element so iOS hands the audio session back to
-      // speechSynthesis before the first spoken cue.
-      inIntro = false;
-      aumAudio.pause();
-      if (isRunning) beginBreathing();
-    };
+    aumAudio.onended = () => { aumAudio.pause(); onEnd(); };
     const played = aumAudio.play();
-    // If playback is blocked (e.g. autoplay policy), go straight to breathing.
-    if (played && played.catch) {
-      played.catch(() => { inIntro = false; if (isRunning) beginBreathing(); });
-    }
+    if (played && played.catch) played.catch(() => onEnd());
+  }
+
+  function playAumIntro() {
+    inIntro = true;
+    playAum(() => { inIntro = false; if (isRunning) beginBreathing(); });
   }
 
   function beginBreathing() {
@@ -446,18 +445,29 @@
 
   function completeSession() {
     stopTimers();
-    stopAum();
-    releaseWakeLock();
     isRunning = false;
+    el.controlBtn.textContent = "Start";
+    setControlsDisabled(false);
+
+    if (usesAumOutro()) {
+      // Close the practice with the Aum chant, keeping the screen awake until
+      // it finishes; show the completion state only once it ends.
+      el.progress.textContent = `Cycle ${totalCycles} / ${totalCycles}`;
+      playAum(() => { releaseWakeLock(); showCompletion(); });
+    } else {
+      releaseWakeLock();
+      showCompletion();
+      speak("Session complete");
+    }
+  }
+
+  function showCompletion() {
     el.circle.className = "breathing-circle";
     el.circle.style.transform = "scale(1)";
     el.instruction.textContent = "Done";
     el.circleCount.textContent = "✓";
     el.progress.textContent = `Cycle ${totalCycles} / ${totalCycles}`;
     el.completion.classList.add("show");
-    el.controlBtn.textContent = "Start";
-    setControlsDisabled(false);
-    speak("Session complete");
   }
 
   function stopSession() {
