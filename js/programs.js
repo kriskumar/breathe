@@ -17,7 +17,7 @@ const PROGRAMS = [
   {
     id: "simple-mind",
     name: "Simple Mind",
-    description: "A short, gentle 1:2 breath to settle the mind, closing with Aum.",
+    description: "A short, gentle 1:2 breath to settle the mind.",
     unit: 3,
     pre: 3,
     levels: {
