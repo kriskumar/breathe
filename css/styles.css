@@ -323,6 +323,34 @@ button {
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.25);
 }
 
+.aum-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 14px;
+}
+
+.aum-btn {
+    background: #fff;
+    color: #764ba2;
+    border: 2px solid #d9cdec;
+    border-radius: 999px;
+    padding: 10px 24px;
+    font-size: 15px;
+    text-transform: none;
+    min-width: 160px;
+}
+
+.aum-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(118, 75, 162, 0.2);
+}
+
+.aum-btn.playing {
+    background: linear-gradient(135deg, #c471f5 0%, #fa71cd 100%);
+    color: #fff;
+    border-color: transparent;
+}
+
 .hint {
     text-align: center;
     font-size: 0.8em;

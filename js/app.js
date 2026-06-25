@@ -21,6 +21,7 @@
     completion: document.getElementById("completionMessage"),
     controlBtn: document.getElementById("controlBtn"),
     resetBtn: document.getElementById("resetBtn"),
+    aumBtn: document.getElementById("aumBtn"),
     voiceToggle: document.getElementById("voiceToggle"),
     voiceSettings: document.getElementById("voiceSettings"),
     voiceSelect: document.getElementById("voiceSelect"),
@@ -43,8 +44,7 @@
   let tickTimer = null;
   let totalCycles = 0;
   let currentCycle = 0;
-  let aumAudio = null;    // ~59s Aum chant that opens the calming programs
-  let inIntro = false;    // true while the Aum intro is playing
+  let aumAudio = null;    // ~59s Aum chant played via the manual Aum button
 
   // ---- Audio (ding) ------------------------------------------------------
   let audioContext = null;
@@ -297,40 +297,7 @@
       refreshVoices();
     }
 
-    if (usesAumIntro()) {
-      playAumIntro();
-    } else {
-      beginBreathing();
-    }
-  }
-
-  // Calming programs open with the ~59s Aum chant; Simple Mind closes with it.
-  const AUM_INTRO_PROGRAMS = ["calming1", "calming2", "calming3"];
-  const AUM_OUTRO_PROGRAMS = ["simple-mind"];
-  function usesAumIntro() { return AUM_INTRO_PROGRAMS.indexOf(el.program.value) !== -1; }
-  function usesAumOutro() { return AUM_OUTRO_PROGRAMS.indexOf(el.program.value) !== -1; }
-
-  // Show the 🕉️ Aum state and play the chant, calling onEnd when it finishes
-  // (or immediately if playback is blocked). The media element is fully released
-  // so iOS hands the audio session back to speechSynthesis.
-  function playAum(onEnd) {
-    el.circle.className = "breathing-circle phase-prep";
-    el.circle.style.transition = "transform 0.3s ease-in-out";
-    el.circle.style.transform = "scale(1)";
-    el.instruction.textContent = "🕉️ Aum";
-    el.circleCount.textContent = "";
-    el.progress.textContent = "Aum…";
-
-    if (!aumAudio) aumAudio = new Audio("mp3/aum.mp3");
-    aumAudio.currentTime = 0;
-    aumAudio.onended = () => { aumAudio.pause(); onEnd(); };
-    const played = aumAudio.play();
-    if (played && played.catch) played.catch(() => onEnd());
-  }
-
-  function playAumIntro() {
-    inIntro = true;
-    playAum(() => { inIntro = false; if (isRunning) beginBreathing(); });
+    beginBreathing();
   }
 
   function beginBreathing() {
@@ -339,12 +306,41 @@
     tickTimer = setInterval(tick, 100);
   }
 
+  // ---- Aum chant (manual, standalone) ------------------------------------
+  // A dedicated button plays/stops the ~59s Aum independently of the breathing
+  // session, so the audio never queues against the spoken cues.
+  let aumPlaying = false;
+
+  function toggleAum() {
+    if (aumPlaying) { stopAum(); return; }
+    if (!aumAudio) aumAudio = new Audio("mp3/aum.mp3");
+    aumAudio.currentTime = 0;
+    aumPlaying = true;
+    updateAumButton();
+    if (!isRunning) acquireWakeLock();   // keep the screen on for the chant
+    aumAudio.onended = endAum;
+    const played = aumAudio.play();
+    if (played && played.catch) played.catch(endAum);
+  }
+
   function stopAum() {
-    inIntro = false;
     if (aumAudio) {
       aumAudio.onended = null;
       aumAudio.pause();
     }
+    endAum();
+  }
+
+  function endAum() {
+    aumPlaying = false;
+    updateAumButton();
+    if (!isRunning) releaseWakeLock();
+  }
+
+  function updateAumButton() {
+    if (!el.aumBtn) return;
+    el.aumBtn.textContent = aumPlaying ? "⏹ Stop Aum" : "🕉️ Aum";
+    el.aumBtn.classList.toggle("playing", aumPlaying);
   }
 
   // ---- Screen Wake Lock --------------------------------------------------
@@ -448,17 +444,9 @@
     isRunning = false;
     el.controlBtn.textContent = "Start";
     setControlsDisabled(false);
-
-    if (usesAumOutro()) {
-      // Close the practice with the Aum chant, keeping the screen awake until
-      // it finishes; show the completion state only once it ends.
-      el.progress.textContent = `Cycle ${totalCycles} / ${totalCycles}`;
-      playAum(() => { releaseWakeLock(); showCompletion(); });
-    } else {
-      releaseWakeLock();
-      showCompletion();
-      speak("Session complete");
-    }
+    releaseWakeLock();
+    showCompletion();
+    speak("Session complete");
   }
 
   function showCompletion() {
@@ -608,6 +596,7 @@
     // Wiring
     el.controlBtn.addEventListener("click", toggleControl);
     el.resetBtn.addEventListener("click", resetSession);
+    el.aumBtn.addEventListener("click", toggleAum);
     el.program.addEventListener("change", onProgramChange);
     el.levelControl.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => setLevel(b.dataset.level));
