@@ -7,6 +7,7 @@
   const el = {
     program: document.getElementById("program"),
     description: document.getElementById("programDescription"),
+    hint: document.getElementById("programHint"),
     levelControl: document.getElementById("levelControl"),
     customFields: document.querySelectorAll(".custom-only"),
     repetitions: document.getElementById("repetitions"),
@@ -21,7 +22,6 @@
     completion: document.getElementById("completionMessage"),
     controlBtn: document.getElementById("controlBtn"),
     resetBtn: document.getElementById("resetBtn"),
-    aumBtn: document.getElementById("aumBtn"),
     voiceToggle: document.getElementById("voiceToggle"),
     voiceSettings: document.getElementById("voiceSettings"),
     voiceSelect: document.getElementById("voiceSelect"),
@@ -29,6 +29,19 @@
     voiceRate: document.getElementById("voiceRate"),
     voiceVolume: document.getElementById("voiceVolume"),
     dingToggle: document.getElementById("dingToggle"),
+    // Tabs + Meditate
+    tabButtons: document.querySelectorAll(".tab-btn"),
+    breathePanel: document.getElementById("breathePanel"),
+    meditatePanel: document.getElementById("meditatePanel"),
+    recordingList: document.getElementById("recordingList"),
+    meditationList: document.getElementById("meditationList"),
+    medUnsupported: document.getElementById("medUnsupported"),
+    medVoiceNote: document.getElementById("medVoiceNote"),
+    nowPlaying: document.getElementById("nowPlaying"),
+    npTitle: document.getElementById("npTitle"),
+    npLine: document.getElementById("npLine"),
+    npBar: document.getElementById("npBar"),
+    npStop: document.getElementById("npStop"),
   };
 
   const PREFS_KEY = "breathe.prefs";
@@ -44,7 +57,7 @@
   let tickTimer = null;
   let totalCycles = 0;
   let currentCycle = 0;
-  let aumAudio = null;    // ~59s Aum chant played via the manual Aum button
+  const loopPrefs = {};   // recording id -> loop on/off, persisted in prefs
 
   // ---- Audio (ding) ------------------------------------------------------
   let audioContext = null;
@@ -184,11 +197,20 @@
       // Custom
       document.body.classList.add("custom-mode");
       el.description.textContent = "Set your own inhale, hold, exhale and sustain times.";
+      setHint("");
     } else {
       document.body.classList.remove("custom-mode");
       el.description.textContent = program.description;
+      setHint(program.hint || "");
     }
     savePrefs();
+  }
+
+  // Show the optional per-program "how to" hint, or hide it when absent.
+  function setHint(text) {
+    if (!el.hint) return;
+    el.hint.textContent = text;
+    el.hint.hidden = !text;
   }
 
   function setLevel(next) {
@@ -279,7 +301,7 @@
     schedule = buildSchedule(settings);
     if (schedule.length === 0) return;
 
-    stopAum();  // cancel a closing Aum from a previous session if still playing
+    stopMeditation();  // never overlap a meditation with a breathing session
     totalCycles = settings.cycles;
     currentCycle = 0;
     stepIndex = 0;
@@ -306,41 +328,193 @@
     tickTimer = setInterval(tick, 100);
   }
 
-  // ---- Aum chant (manual, standalone) ------------------------------------
-  // A dedicated button plays/stops the ~59s Aum independently of the breathing
-  // session, so the audio never queues against the spoken cues.
-  let aumPlaying = false;
+  // ---- Tabs --------------------------------------------------------------
+  function switchTab(name) {
+    // Leaving a tab stops whatever it was doing.
+    if (isRunning) stopSession();
+    stopMeditation();
 
-  function toggleAum() {
-    if (aumPlaying) { stopAum(); return; }
-    if (!aumAudio) aumAudio = new Audio("mp3/aum.mp3");
-    aumAudio.currentTime = 0;
-    aumPlaying = true;
-    updateAumButton();
-    if (!isRunning) acquireWakeLock();   // keep the screen on for the chant
-    aumAudio.onended = endAum;
-    const played = aumAudio.play();
-    if (played && played.catch) played.catch(endAum);
+    el.tabButtons.forEach((b) => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    el.breathePanel.hidden = name !== "breathe";
+    el.meditatePanel.hidden = name !== "meditate";
   }
 
-  function stopAum() {
-    if (aumAudio) {
-      aumAudio.onended = null;
-      aumAudio.pause();
+  // ---- Meditate tab: recordings (audio) + guided scripts (TTS) ------------
+  // One playback at a time. medState tracks whichever is active so switching
+  // tabs, starting another, or pressing Stop can cleanly tear it down.
+  const medState = { active: false, type: null, audio: null, timer: null, item: null, idx: 0 };
+
+  // Per-recording loop checkboxes, keyed by recording id.
+  const loopToggles = {};
+
+  function renderMeditationLists() {
+    RECORDINGS.forEach((r) => el.recordingList.appendChild(makeRecordingRow(r)));
+
+    if (ttsSupported) {
+      const guided = MEDITATIONS.map((m) => makeMedItem(m, "tts"));
+      el.meditationList.append(...guided);
+    } else {
+      el.medVoiceNote.hidden = true;
+      el.medUnsupported.hidden = false;
     }
-    endAum();
   }
 
-  function endAum() {
-    aumPlaying = false;
-    updateAumButton();
-    if (!isRunning) releaseWakeLock();
+  // A recording row = the play button plus a loop toggle beside it.
+  function makeRecordingRow(rec) {
+    const row = document.createElement("div");
+    row.className = "med-row";
+
+    const loop = document.createElement("label");
+    loop.className = "med-loop";
+    loop.title = "Loop this recording";
+    loop.innerHTML = '<input type="checkbox"><span aria-hidden="true">🔁</span>';
+    const cb = loop.querySelector("input");
+    cb.checked = !!loopPrefs[rec.id];
+    cb.addEventListener("change", () => {
+      // Apply live if this recording is playing, and remember the choice.
+      if (medState.type === "audio" && medState.item === rec && medState.audio) {
+        medState.audio.loop = cb.checked;
+      }
+      loopPrefs[rec.id] = cb.checked;
+      savePrefs();
+    });
+    loopToggles[rec.id] = cb;
+
+    row.append(makeMedItem(rec, "audio"), loop);
+    return row;
   }
 
-  function updateAumButton() {
-    if (!el.aumBtn) return;
-    el.aumBtn.textContent = aumPlaying ? "⏹ Stop Aum" : "🕉️ Aum";
-    el.aumBtn.classList.toggle("playing", aumPlaying);
+  function makeMedItem(data, type) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "med-item";
+    btn.dataset.medId = data.id;
+    const mins = data.minutes ? `${data.minutes} min` : "";
+    btn.innerHTML =
+      '<span class="med-item-icon">▶</span>' +
+      '<span class="med-item-text">' +
+        '<span class="med-item-name"></span>' +
+        '<span class="med-item-desc"></span>' +
+      "</span>" +
+      '<span class="med-item-time"></span>';
+    btn.querySelector(".med-item-name").textContent = data.name;
+    btn.querySelector(".med-item-desc").textContent = data.description || "";
+    btn.querySelector(".med-item-time").textContent = mins;
+    btn.addEventListener("click", () => {
+      if (medState.active && medState.item === data) { stopMeditation(); return; }
+      type === "audio" ? playRecording(data) : playGuided(data);
+    });
+    return btn;
+  }
+
+  function playRecording(rec) {
+    stopMeditation();
+    medState.active = true;
+    medState.type = "audio";
+    medState.item = rec;
+    const audio = new Audio(rec.file);
+    audio.loop = !!(loopToggles[rec.id] && loopToggles[rec.id].checked);
+    medState.audio = audio;
+    acquireWakeLock();
+    showNowPlaying(rec.name, "");
+    markActiveItem(rec.id);
+    // Scope callbacks to this audio instance so a late `ended`/rejected play()
+    // from a superseded recording can't tear down a newer session.
+    const isCurrent = () => medState.audio === audio;
+    audio.addEventListener("timeupdate", () => {
+      if (isCurrent() && audio.duration) setMedProgress(audio.currentTime / audio.duration);
+    });
+    audio.addEventListener("ended", () => { if (isCurrent()) finishMeditation(); });
+    const played = audio.play();
+    if (played && played.catch) played.catch(() => { if (isCurrent()) finishMeditation(); });
+  }
+
+  function playGuided(med) {
+    if (!ttsSupported) return;
+    stopMeditation();
+    medState.active = true;
+    medState.type = "tts";
+    medState.item = med;
+    medState.idx = 0;
+    acquireWakeLock();
+    // A Start-style user gesture got us here; refresh the iOS voice list.
+    window.speechSynthesis.cancel();
+    refreshVoices();
+    showNowPlaying(med.name, "");
+    markActiveItem(med.id);
+    speakSegment();
+  }
+
+  // Speak one script line, then wait its `pause` seconds before the next.
+  function speakSegment() {
+    if (!medState.active || medState.type !== "tts") return;
+    const med = medState.item;
+    if (medState.idx >= med.segments.length) { finishMeditation(); return; }
+
+    const seg = med.segments[medState.idx];
+    el.npLine.textContent = seg.say;
+    setMedProgress(medState.idx / med.segments.length);
+
+    const u = new SpeechSynthesisUtterance(seg.say);
+    const chosen = voices[el.voiceSelect.value];
+    if (chosen) u.voice = chosen;
+    u.rate = parseFloat(el.voiceRate.value);
+    u.volume = parseFloat(el.voiceVolume.value);
+    u.onend = () => {
+      if (!medState.active || medState.type !== "tts") return;
+      medState.timer = setTimeout(() => {
+        medState.idx++;
+        speakSegment();
+      }, (seg.pause || 0) * 1000);
+    };
+    window.speechSynthesis.speak(u);
+  }
+
+  function showNowPlaying(title, line) {
+    el.npTitle.textContent = title;
+    el.npLine.textContent = line || "";
+    setMedProgress(0);
+    el.nowPlaying.hidden = false;
+  }
+
+  function setMedProgress(fraction) {
+    const pct = Math.max(0, Math.min(1, fraction)) * 100;
+    el.npBar.style.width = pct + "%";
+  }
+
+  function markActiveItem(id) {
+    document.querySelectorAll(".med-item").forEach((b) => {
+      b.classList.toggle("playing", b.dataset.medId === id);
+    });
+  }
+
+  // Reached the natural end of a recording or script.
+  function finishMeditation() {
+    setMedProgress(1);
+    teardownMeditation();
+  }
+
+  // Stop early (tab switch, Stop button, starting another, breathing session).
+  function stopMeditation() {
+    teardownMeditation();
+  }
+
+  function teardownMeditation() {
+    if (medState.timer) { clearTimeout(medState.timer); medState.timer = null; }
+    if (medState.audio) { medState.audio.onended = null; medState.audio.pause(); medState.audio = null; }
+    if (ttsSupported) window.speechSynthesis.cancel();
+    const wasActive = medState.active;
+    medState.active = false;
+    medState.type = null;
+    medState.item = null;
+    medState.idx = 0;
+    markActiveItem(null);
+    el.nowPlaying.hidden = true;
+    if (wasActive && !isRunning) releaseWakeLock();
   }
 
   // ---- Screen Wake Lock --------------------------------------------------
@@ -460,7 +634,6 @@
 
   function stopSession() {
     stopTimers();
-    stopAum();
     releaseWakeLock();
     cancelSpeech();
     isRunning = false;
@@ -495,7 +668,6 @@
   // without reloading the page.
   function resetSession() {
     stopTimers();
-    stopAum();
     releaseWakeLock();
     cancelSpeech();
     isRunning = false;
@@ -525,6 +697,7 @@
       rate: el.voiceRate.value,
       volume: el.voiceVolume.value,
       ding: el.dingToggle.checked,
+      loops: loopPrefs,
       custom: {
         reps: el.repetitions.value,
         inhale: el.inhaleTime.value,
@@ -552,6 +725,7 @@
     if (prefs.rate) el.voiceRate.value = prefs.rate;
     if (prefs.volume) el.voiceVolume.value = prefs.volume;
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
+    if (prefs.loops) Object.assign(loopPrefs, prefs.loops);
     if (prefs.voiceIndex) el.voiceSelect.dataset.pending = prefs.voiceIndex;
     if (prefs.custom) {
       el.repetitions.value = prefs.custom.reps ?? el.repetitions.value;
@@ -596,8 +770,13 @@
     // Wiring
     el.controlBtn.addEventListener("click", toggleControl);
     el.resetBtn.addEventListener("click", resetSession);
-    el.aumBtn.addEventListener("click", toggleAum);
     el.program.addEventListener("change", onProgramChange);
+
+    // Tabs + Meditate
+    renderMeditationLists();
+    el.tabButtons.forEach((b) =>
+      b.addEventListener("click", () => switchTab(b.dataset.tab)));
+    el.npStop.addEventListener("click", stopMeditation);
     el.levelControl.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => setLevel(b.dataset.level));
     });
@@ -611,10 +790,22 @@
      el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
       .forEach((node) => node.addEventListener("change", savePrefs));
 
+    // The "see the research ↓" link inside Help opens the (collapsed) Research
+    // section and scrolls to it.
+    const toResearch = document.getElementById("toResearch");
+    const researchSection = document.getElementById("researchSection");
+    if (toResearch && researchSection) {
+      toResearch.addEventListener("click", (e) => {
+        e.preventDefault();
+        researchSection.open = true;
+        researchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
     // iOS releases the wake lock when the tab is hidden; re-acquire it when the
     // user returns mid-session.
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && isRunning && !wakeLock) {
+      if (document.visibilityState === "visible" && (isRunning || medState.active) && !wakeLock) {
         acquireWakeLock();
       }
     });
