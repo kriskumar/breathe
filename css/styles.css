@@ -87,6 +87,22 @@ select:disabled {
     line-height: 1.4;
 }
 
+/* Optional "how to" hint shown under the description for some programs. */
+.program-hint {
+    font-size: 0.86em;
+    color: #5b4a82;
+    line-height: 1.5;
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(196, 113, 245, 0.1) 100%);
+    border-left: 3px solid #a98fe0;
+    border-radius: 8px;
+}
+
+.program-hint[hidden] {
+    display: none;
+}
+
 /* Level segmented control */
 .level-control {
     display: flex;
@@ -323,32 +339,100 @@ button {
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.25);
 }
 
-.aum-row {
+/* Tab bar (Breathe / Meditate) */
+.tab-bar {
     display: flex;
-    justify-content: center;
-    margin-top: 14px;
+    gap: 8px;
+    margin-bottom: 24px;
 }
 
-.aum-btn {
-    background: #fff;
-    color: #764ba2;
-    border: 2px solid #d9cdec;
-    border-radius: 999px;
-    padding: 10px 24px;
-    font-size: 15px;
+.tab-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 12px;
+    font-size: 0.95em;
+    font-weight: 600;
     text-transform: none;
-    min-width: 160px;
+    border: 2px solid #ddd;
+    background: #fff;
+    color: #555;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.aum-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(118, 75, 162, 0.2);
-}
-
-.aum-btn.playing {
-    background: linear-gradient(135deg, #c471f5 0%, #fa71cd 100%);
-    color: #fff;
+.tab-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-color: transparent;
+    color: #fff;
+}
+
+.tab-panel[hidden] {
+    display: none;
+}
+
+/* Meditate tab — picker + description, mirroring the breathing controls */
+.med-note {
+    font-size: 0.84em;
+    color: #888;
+    margin: 4px 0 12px;
+    line-height: 1.45;
+}
+
+/* The loop toggle row only appears for the repeating chants. */
+#medLoopRow[hidden] {
+    display: none;
+}
+
+/* Play button turns into a calm "Stop" while a session runs. */
+.start-btn.is-playing {
+    background: linear-gradient(135deg, #8a7fb8 0%, #6f5b9e 100%);
+}
+
+/* "Now playing" bar — sticks to the bottom while a session plays */
+.now-playing {
+    position: sticky;
+    bottom: 12px;
+    z-index: 5;
+    margin-top: 20px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid #d4c9ec;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+}
+
+.now-playing[hidden] {
+    display: none;
+}
+
+.np-title {
+    font-weight: 700;
+    color: #5b4a82;
+}
+
+.np-line {
+    font-size: 0.88em;
+    color: #666;
+    margin-top: 4px;
+    line-height: 1.45;
+}
+
+.np-progress {
+    height: 6px;
+    background: #ece8f6;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.np-bar {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.3s linear;
 }
 
 .hint {
@@ -371,6 +455,158 @@ button {
 
 .donate a:hover {
     text-decoration: underline;
+}
+
+/* Collapsible Help / Research sections */
+.info-sections {
+    margin-top: 24px;
+    border-top: 1px solid #eee;
+    padding-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info {
+    border: 1px solid #e7e2f2;
+    border-radius: 12px;
+    background: rgba(102, 126, 234, 0.04);
+    overflow: hidden;
+    transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.info[open] {
+    border-color: #d4c9ec;
+    box-shadow: 0 6px 18px rgba(102, 126, 234, 0.12);
+}
+
+.info summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    font-weight: 600;
+    font-size: 0.95em;
+    color: #5b4a82;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+}
+
+.info summary::-webkit-details-marker {
+    display: none;
+}
+
+.info summary::after {
+    content: "▾";
+    font-size: 0.8em;
+    color: #a98fe0;
+    transition: transform 0.3s;
+}
+
+.info[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.info summary:hover {
+    color: #764ba2;
+}
+
+.info-body {
+    padding: 0 16px 16px;
+    color: #555;
+    font-size: 0.88em;
+    line-height: 1.55;
+    animation: fadeIn 0.3s ease;
+}
+
+.info-steps,
+.info-list {
+    margin: 0 0 4px;
+    padding-left: 20px;
+}
+
+.info-steps li,
+.info-list li {
+    margin-bottom: 10px;
+}
+
+.info-steps li::marker {
+    color: #a98fe0;
+    font-weight: 700;
+}
+
+.info-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.info-list li {
+    padding-left: 16px;
+    position: relative;
+}
+
+.info-list li::before {
+    content: "•";
+    position: absolute;
+    left: 2px;
+    color: #a98fe0;
+    font-weight: 700;
+}
+
+.info-body p {
+    margin: 0 0 10px;
+}
+
+.info-body p:last-child {
+    margin-bottom: 0;
+}
+
+.info-note {
+    font-size: 0.92em;
+    color: #777;
+}
+
+.info-disclaimer {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed #e0d9f0;
+    font-style: italic;
+    color: #8a8a8a;
+}
+
+/* "Add to home screen" callout inside Help */
+.info-install {
+    margin: 14px 0;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.07) 0%, rgba(196, 113, 245, 0.09) 100%);
+    border-radius: 10px;
+}
+
+.info-subhead {
+    font-weight: 700;
+    color: #5b4a82;
+    margin-bottom: 6px !important;
+}
+
+.info-install .info-list {
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.info-install .info-list li:last-child {
+    margin-bottom: 0;
+}
+
+.info-body a {
+    color: #764ba2;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(118, 75, 162, 0.3);
+}
+
+.info-body a:hover {
+    border-bottom-color: #764ba2;
 }
 
 /* Phones: tighten spacing and let the controls share the row. */

@@ -12,12 +12,16 @@
  *
  * Actual phase duration in seconds = ratioValue * unit.
  * cycle = number of times the inhale/retain/exhale/sustain sequence repeats.
+ *
+ * An optional `hint` gives extra "how to" guidance shown under the description
+ * (e.g. how to make the humming sound in Bhramari).
  */
 const PROGRAMS = [
   {
     id: "simple-mind",
     name: "Simple Mind",
     description: "A short, gentle 1:2 breath to settle the mind.",
+    hint: "Breathe through the nose and let the belly rise on the inhale, fall on the exhale. Keep it soft and unforced — the out-breath is simply twice as long as the in-breath.",
     unit: 3,
     pre: 3,
     levels: {
@@ -30,6 +34,7 @@ const PROGRAMS = [
     id: "clear-mind",
     name: "Clear Mind",
     description: "Short inhale with a long, slow exhale to clear and settle the mind.",
+    hint: "Take a small, easy inhale through the nose, then let the exhale stream out slowly and fully, as if gently fogging a mirror. Don't force the in-breath — the long exhale does the work.",
     unit: 3,
     pre: 3,
     levels: {
@@ -42,6 +47,7 @@ const PROGRAMS = [
     id: "relax1",
     name: "Relax 1",
     description: "Gentle breathing with a sustain after the exhale to relax the body.",
+    hint: "After breathing out, rest with the lungs empty and stay relaxed — there's no need to gulp the next breath. Let your shoulders and jaw soften during the pause.",
     unit: 3,
     pre: 3,
     levels: {
@@ -54,6 +60,7 @@ const PROGRAMS = [
     id: "relax2",
     name: "Relax 2 (4-7-8)",
     description: "The classic 4-7-8 pattern: inhale 4, hold 7, exhale 8.",
+    hint: "A favourite before sleep. Inhale quietly through the nose, hold gently, then exhale through the mouth with a soft \"whoosh.\" Rest the tip of your tongue behind your upper front teeth throughout.",
     unit: 1,
     pre: 3,
     levels: {
@@ -66,6 +73,7 @@ const PROGRAMS = [
     id: "relax3",
     name: "Relax 3",
     description: "Slow inhale and an even slower exhale for deep relaxation.",
+    hint: "Long, smooth breaths with no holds. Draw the inhale in slowly and let the exhale last even longer — keep both unhurried and even, like a calm tide rolling in and out.",
     unit: 1,
     pre: 3,
     levels: {
@@ -78,6 +86,7 @@ const PROGRAMS = [
     id: "calming1",
     name: "Calming 1",
     description: "Balanced holds on both ends of the breath to calm the nerves.",
+    hint: "Equal, gentle pauses at the top and bottom of each breath. Stay soft during the holds rather than bracing — let the brief stillness quiet the nervous system.",
     unit: 3,
     pre: 3,
     levels: {
@@ -90,6 +99,7 @@ const PROGRAMS = [
     id: "calming2",
     name: "Calming 2",
     description: "Even inhale and exhale with a sustain to encourage stillness.",
+    hint: "Even in- and out-breaths followed by a relaxed pause on empty. Use the hold to release tension in your face and shoulders before drawing the next breath.",
     unit: 1,
     pre: 3,
     levels: {
@@ -102,6 +112,7 @@ const PROGRAMS = [
     id: "calming3",
     name: "Calming 3",
     description: "Extended exhale work that deepens with each level.",
+    hint: "Let each exhale stretch longer than the inhale. As the levels add brief holds, keep them easy and unforced — ease off if you ever feel short of breath.",
     unit: 1,
     pre: 3,
     levels: {
@@ -114,6 +125,7 @@ const PROGRAMS = [
     id: "power",
     name: "Power",
     description: "Hold after inhaling to build energy and focus.",
+    hint: "Fill the lungs, then hold with the breath in to build energy and focus. Keep your throat and shoulders relaxed during the hold rather than clamping down.",
     unit: 3,
     pre: 3,
     levels: {
@@ -126,6 +138,7 @@ const PROGRAMS = [
     id: "harmony",
     name: "Harmony",
     description: "Holds on both ends with a long retain to find balance.",
+    hint: "A longer hold after the inhale with a short pause on empty. Sit tall, keep your face relaxed, and let the breath find an even, balanced rhythm.",
     unit: 3,
     pre: 3,
     levels: {
@@ -138,6 +151,7 @@ const PROGRAMS = [
     id: "anti-stress",
     name: "Anti-Stress",
     description: "Long inhale with a quick exhale to release tension.",
+    hint: "Draw a slow, full inhale through the nose, then release it in one quick, easy exhale — letting the body slump a little as you let go of tension.",
     unit: 3,
     pre: 3,
     levels: {
@@ -150,6 +164,7 @@ const PROGRAMS = [
     id: "anti-appetite",
     name: "Anti-Appetite",
     description: "Longer inhale with a sustain to help curb cravings.",
+    hint: "Even breaths with a relaxed pause on empty. Practise between meals — the hold on empty helps draw your attention away from a craving until it passes.",
     unit: 1,
     pre: 3,
     levels: {
@@ -162,6 +177,7 @@ const PROGRAMS = [
     id: "cigarette-replace",
     name: "Cigarette Replace",
     description: "A measured four-phase breath to replace the urge to smoke.",
+    hint: "A measured four-part breath to ride out a craving. Let the count occupy your hands and attention, and remind yourself the urge will fade within a few rounds.",
     unit: 2,
     pre: 3,
     levels: {
@@ -174,6 +190,7 @@ const PROGRAMS = [
     id: "decision-making",
     name: "Decision-Making",
     description: "Inhale, brief hold, and long exhale to think clearly.",
+    hint: "Inhale steadily, pause briefly, then let a long exhale carry out the mental clutter. Use the slow out-breath to settle yourself before making a choice.",
     unit: 1,
     pre: 3,
     levels: {
@@ -186,6 +203,7 @@ const PROGRAMS = [
     id: "balancing",
     name: "Balancing",
     description: "Symmetric breathing with holds that grow with each level.",
+    hint: "Match the inhale and exhale evenly, breathing low into the belly. As the levels add equal holds, keep the whole cycle smooth and symmetric.",
     unit: 1,
     pre: 3,
     levels: {
@@ -198,6 +216,7 @@ const PROGRAMS = [
     id: "energizing",
     name: "Energizing",
     description: "Builds retention to wake the body and mind up.",
+    hint: "Make the inhale a touch longer than the exhale, adding the holds as the levels build. Sit upright and let the breath wake you up — skip a round if you feel light-headed.",
     unit: 1,
     pre: 3,
     levels: {
@@ -210,6 +229,7 @@ const PROGRAMS = [
     id: "box",
     name: "Box",
     description: "Equal inhale, hold, exhale and hold — the classic box breath.",
+    hint: "The square breath used to stay calm under pressure: inhale, hold, exhale, hold — each for the same count. Trace the four equal sides of a box in your mind and keep every side smooth.",
     unit: 1,
     pre: 3,
     levels: {
@@ -222,6 +242,7 @@ const PROGRAMS = [
     id: "coherent",
     name: "Coherent",
     description: "Even 5-and-5 breathing to reach a coherent, steady rhythm.",
+    hint: "Breathe an even five in, five out — about six breaths a minute. Breathe low into the belly and let the rhythm become effortless; this is the rate that steadies heart and mind.",
     unit: 1,
     pre: 3,
     levels: {
@@ -231,9 +252,23 @@ const PROGRAMS = [
     },
   },
   {
+    id: "bhramari",
+    name: "Bhramari (Humming)",
+    description: "Humming-bee breath: a silent inhale, then a long humming exhale to soothe the mind.",
+    hint: "On each exhale, gently close your lips, relax your jaw, and make a soft, steady low \"mmmm\" — like a humming bee. Keep the sound smooth and even for the whole out-breath, and rest your attention on the gentle vibration in your head and chest. Inhale quietly through the nose.",
+    unit: 1,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [4, 0, 6, 0], cycle: 6 },
+      medium:   { ratio: [4, 0, 8, 0], cycle: 9 },
+      advanced: { ratio: [5, 0, 10, 0], cycle: 12 },
+    },
+  },
+  {
     id: "fire",
     name: "Fire",
     description: "A long sustain after the exhale to stoke inner heat.",
+    hint: "After a full exhale, hold with the lungs empty to stoke inner heat. Stay calm and still through the long hold and come out gently — this is advanced, so never push past comfort.",
     unit: 1,
     pre: 3,
     levels: {
@@ -246,6 +281,7 @@ const PROGRAMS = [
     id: "retention",
     name: "Retention",
     description: "Short breaths with a long empty-lung hold to build tolerance.",
+    hint: "Short, easy breaths with a long pause on empty to build breath tolerance. Keep your body relaxed during the hold and ease off the moment you feel real air hunger.",
     unit: 1,
     pre: 3,
     levels: {
@@ -258,6 +294,7 @@ const PROGRAMS = [
     id: "swooning",
     name: "Swooning",
     description: "A long retain after inhaling for an advanced, heady practice.",
+    hint: "A long hold with the lungs full, so treat it as advanced. Keep your throat and face soft during the retention, and stop if you feel dizzy — best done seated or lying down.",
     unit: 1,
     pre: 3,
     levels: {

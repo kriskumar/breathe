@@ -7,6 +7,7 @@
   const el = {
     program: document.getElementById("program"),
     description: document.getElementById("programDescription"),
+    hint: document.getElementById("programHint"),
     levelControl: document.getElementById("levelControl"),
     customFields: document.querySelectorAll(".custom-only"),
     repetitions: document.getElementById("repetitions"),
@@ -21,7 +22,6 @@
     completion: document.getElementById("completionMessage"),
     controlBtn: document.getElementById("controlBtn"),
     resetBtn: document.getElementById("resetBtn"),
-    aumBtn: document.getElementById("aumBtn"),
     voiceToggle: document.getElementById("voiceToggle"),
     voiceSettings: document.getElementById("voiceSettings"),
     voiceSelect: document.getElementById("voiceSelect"),
@@ -29,6 +29,21 @@
     voiceRate: document.getElementById("voiceRate"),
     voiceVolume: document.getElementById("voiceVolume"),
     dingToggle: document.getElementById("dingToggle"),
+    // Tabs + Meditate
+    tabButtons: document.querySelectorAll(".tab-btn"),
+    breathePanel: document.getElementById("breathePanel"),
+    meditatePanel: document.getElementById("meditatePanel"),
+    meditationSelect: document.getElementById("meditationSelect"),
+    meditationDescription: document.getElementById("meditationDescription"),
+    medLoopRow: document.getElementById("medLoopRow"),
+    medLoop: document.getElementById("medLoop"),
+    medPlayBtn: document.getElementById("medPlayBtn"),
+    medUnsupported: document.getElementById("medUnsupported"),
+    medVoiceNote: document.getElementById("medVoiceNote"),
+    nowPlaying: document.getElementById("nowPlaying"),
+    npTitle: document.getElementById("npTitle"),
+    npLine: document.getElementById("npLine"),
+    npBar: document.getElementById("npBar"),
   };
 
   const PREFS_KEY = "breathe.prefs";
@@ -44,7 +59,7 @@
   let tickTimer = null;
   let totalCycles = 0;
   let currentCycle = 0;
-  let aumAudio = null;    // ~59s Aum chant played via the manual Aum button
+  const loopPrefs = {};   // recording id -> loop on/off, persisted in prefs
 
   // ---- Audio (ding) ------------------------------------------------------
   let audioContext = null;
@@ -92,10 +107,49 @@
   let voices = [];
   let voicePollsLeft = 0;
 
+  // Rank a voice for ordering: the device's exact locale first, then the same
+  // language, then everything else. getVoices() returns an arbitrary order that
+  // otherwise buries the user's own-language voices among dozens of others.
+  function voiceRank(v) {
+    const lang = (v.lang || "").toLowerCase().replace("_", "-");
+    const ui = (navigator.language || "en").toLowerCase();
+    if (lang === ui) return 0;
+    if (lang.split("-")[0] === ui.split("-")[0]) return 1;
+    return 2;
+  }
+
+  function languageLabel(code) {
+    try {
+      const dn = new Intl.DisplayNames([navigator.language || "en"], { type: "language" });
+      return dn.of(code.split("-")[0]) || "Recommended";
+    } catch (e) {
+      return "Recommended";
+    }
+  }
+
+  // Identify the chosen voice by its stable voiceURI (not list position), so the
+  // choice survives re-ordering and newly installed voices.
+  function currentVoiceUri() {
+    const idx = el.voiceSelect.value;
+    if (idx !== "" && voices[idx]) return voices[idx].voiceURI;
+    return el.voiceSelect.dataset.pendingUri || "";
+  }
+
+  function selectVoiceByUri(uri) {
+    if (!uri) return;
+    const i = voices.findIndex((v) => v.voiceURI === uri);
+    if (i >= 0) {
+      el.voiceSelect.value = String(i);
+      el.voiceSelect.dataset.pendingUri = "";
+    } else {
+      el.voiceSelect.dataset.pendingUri = uri;   // not loaded yet — wait for it
+    }
+  }
+
   function loadVoices() {
     if (!ttsSupported) return;
-    const list = window.speechSynthesis.getVoices();
-    if (!list.length) {
+    const raw = window.speechSynthesis.getVoices();
+    if (!raw.length) {
       // iOS may not expose named voices yet; show a default so it's not blank.
       if (!el.voiceSelect.options.length) {
         const opt = document.createElement("option");
@@ -105,16 +159,42 @@
       }
       return;                            // a later poll/event will fill real voices
     }
-    voices = list;
-    const saved = el.voiceSelect.value || el.voiceSelect.dataset.pending;
+
+    const wantUri = currentVoiceUri();
+    // Order: device language first, then same language, then the rest; within
+    // each, the system default voice floats up, then alphabetical by name.
+    voices = raw.slice().sort((a, b) =>
+      voiceRank(a) - voiceRank(b) ||
+      ((b.default === true) - (a.default === true)) ||
+      a.name.localeCompare(b.name));
+
+    const preferred = voices.filter((v) => voiceRank(v) <= 1);
+    const rest = voices.filter((v) => voiceRank(v) > 1);
     el.voiceSelect.innerHTML = "";
-    voices.forEach((v, i) => {
+    const grouped = preferred.length && rest.length;
+    addVoiceOptions(grouped ? languageLabel(navigator.language || "en") : "", preferred);
+    addVoiceOptions(grouped ? "Other languages" : "", rest);
+
+    selectVoiceByUri(wantUri);
+  }
+
+  // Append a set of voices, optionally inside a labelled <optgroup>. Option
+  // values are indices into the sorted `voices` array.
+  function addVoiceOptions(groupLabel, list) {
+    if (!list.length) return;
+    let parent = el.voiceSelect;
+    if (groupLabel) {
+      const og = document.createElement("optgroup");
+      og.label = groupLabel;
+      el.voiceSelect.appendChild(og);
+      parent = og;
+    }
+    list.forEach((v) => {
       const opt = document.createElement("option");
-      opt.value = i;
+      opt.value = voices.indexOf(v);
       opt.textContent = `${v.name} (${v.lang})`;
-      el.voiceSelect.appendChild(opt);
+      parent.appendChild(opt);
     });
-    if (saved && voices[saved]) el.voiceSelect.value = saved;
   }
 
   // Mobile browsers (notably iOS Safari) populate getVoices() asynchronously
@@ -184,11 +264,20 @@
       // Custom
       document.body.classList.add("custom-mode");
       el.description.textContent = "Set your own inhale, hold, exhale and sustain times.";
+      setHint("");
     } else {
       document.body.classList.remove("custom-mode");
       el.description.textContent = program.description;
+      setHint(program.hint || "");
     }
     savePrefs();
+  }
+
+  // Show the optional per-program "how to" hint, or hide it when absent.
+  function setHint(text) {
+    if (!el.hint) return;
+    el.hint.textContent = text;
+    el.hint.hidden = !text;
   }
 
   function setLevel(next) {
@@ -279,7 +368,7 @@
     schedule = buildSchedule(settings);
     if (schedule.length === 0) return;
 
-    stopAum();  // cancel a closing Aum from a previous session if still playing
+    stopMeditation();  // never overlap a meditation with a breathing session
     totalCycles = settings.cycles;
     currentCycle = 0;
     stepIndex = 0;
@@ -306,41 +395,185 @@
     tickTimer = setInterval(tick, 100);
   }
 
-  // ---- Aum chant (manual, standalone) ------------------------------------
-  // A dedicated button plays/stops the ~59s Aum independently of the breathing
-  // session, so the audio never queues against the spoken cues.
-  let aumPlaying = false;
+  // ---- Tabs --------------------------------------------------------------
+  function switchTab(name) {
+    // Leaving a tab stops whatever it was doing.
+    if (isRunning) stopSession();
+    stopMeditation();
 
-  function toggleAum() {
-    if (aumPlaying) { stopAum(); return; }
-    if (!aumAudio) aumAudio = new Audio("mp3/aum.mp3");
-    aumAudio.currentTime = 0;
-    aumPlaying = true;
-    updateAumButton();
-    if (!isRunning) acquireWakeLock();   // keep the screen on for the chant
-    aumAudio.onended = endAum;
-    const played = aumAudio.play();
-    if (played && played.catch) played.catch(endAum);
+    el.tabButtons.forEach((b) => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    el.breathePanel.hidden = name !== "breathe";
+    el.meditatePanel.hidden = name !== "meditate";
   }
 
-  function stopAum() {
-    if (aumAudio) {
-      aumAudio.onended = null;
-      aumAudio.pause();
+  // ---- Meditate tab: a picker + description box, then Play ----------------
+  // One playback at a time. medState tracks whichever is active so switching
+  // tabs, starting another, or pressing Stop can cleanly tear it down.
+  const medState = { active: false, type: null, audio: null, timer: null, item: null, idx: 0 };
+
+  // id -> { data, type } for every chant and guided meditation in the picker.
+  const medIndex = {};
+
+  // Build the dropdown (Chants + Guided meditations as optgroups) and show the
+  // description for the initial selection.
+  function renderMeditationPicker() {
+    const groups = [
+      { label: "🎧 Chants", items: RECORDINGS, type: "audio" },
+      { label: "🧘 Guided meditations", items: MEDITATIONS, type: "tts" },
+    ];
+    groups.forEach((g) => {
+      if (!g.items.length) return;
+      const og = document.createElement("optgroup");
+      og.label = g.label;
+      g.items.forEach((data) => {
+        medIndex[data.id] = { data, type: g.type };
+        const opt = document.createElement("option");
+        opt.value = data.id;
+        opt.textContent = data.minutes ? `${data.name} · ${data.minutes} min` : data.name;
+        og.appendChild(opt);
+      });
+      el.meditationSelect.appendChild(og);
+    });
+    onMeditationChange();
+
+    // Guided meditations ship a pre-rendered file; speech synthesis is only a
+    // fallback. Warn only if a file-less meditation exists and TTS is missing.
+    const needsTts = MEDITATIONS.some((m) => !m.file);
+    if (needsTts && !ttsSupported) {
+      el.medVoiceNote.hidden = true;
+      el.medUnsupported.hidden = false;
     }
-    endAum();
   }
 
-  function endAum() {
-    aumPlaying = false;
-    updateAumButton();
-    if (!isRunning) releaseWakeLock();
+  // Update the description box (and the loop toggle) for the chosen session.
+  function onMeditationChange() {
+    const entry = medIndex[el.meditationSelect.value];
+    if (!entry) return;
+    el.meditationDescription.textContent = entry.data.description || "";
+    // Loop only makes sense for the repeating chants, not narrated scripts.
+    const isAudio = entry.type === "audio";
+    el.medLoopRow.hidden = !isAudio;
+    if (isAudio) el.medLoop.checked = !!loopPrefs[entry.data.id];
   }
 
-  function updateAumButton() {
-    if (!el.aumBtn) return;
-    el.aumBtn.textContent = aumPlaying ? "⏹ Stop Aum" : "🕉️ Aum";
-    el.aumBtn.classList.toggle("playing", aumPlaying);
+  // The Play button toggles: start the selected session, or stop the running one.
+  function toggleMedPlay() {
+    if (medState.active) { stopMeditation(); return; }
+    const entry = medIndex[el.meditationSelect.value];
+    if (!entry) return;
+    // A pre-rendered narration (or chant) plays as audio; otherwise fall to TTS.
+    if (entry.data.file) playRecording(entry.data);
+    else playGuided(entry.data);
+  }
+
+  function setPlayingState(on) {
+    el.medPlayBtn.textContent = on ? "⏹ Stop" : "▶ Play";
+    el.medPlayBtn.classList.toggle("is-playing", on);
+  }
+
+  function playRecording(rec) {
+    stopMeditation();
+    medState.active = true;
+    medState.type = "audio";
+    medState.item = rec;
+    const audio = new Audio(rec.file);
+    // Loop applies only to chants (the loop row is visible for them).
+    audio.loop = !el.medLoopRow.hidden && !!el.medLoop.checked;
+    medState.audio = audio;
+    acquireWakeLock();
+    showNowPlaying(rec.name, "");
+    setPlayingState(true);
+    // Scope callbacks to this audio instance so a late `ended`/rejected play()
+    // from a superseded recording can't tear down a newer session.
+    const isCurrent = () => medState.audio === audio;
+    audio.addEventListener("timeupdate", () => {
+      if (isCurrent() && audio.duration) setMedProgress(audio.currentTime / audio.duration);
+    });
+    audio.addEventListener("ended", () => { if (isCurrent()) finishMeditation(); });
+    const played = audio.play();
+    if (played && played.catch) played.catch(() => { if (isCurrent()) finishMeditation(); });
+  }
+
+  function playGuided(med) {
+    if (!ttsSupported) return;
+    stopMeditation();
+    medState.active = true;
+    medState.type = "tts";
+    medState.item = med;
+    medState.idx = 0;
+    acquireWakeLock();
+    // A Start-style user gesture got us here; refresh the iOS voice list.
+    window.speechSynthesis.cancel();
+    refreshVoices();
+    showNowPlaying(med.name, "");
+    setPlayingState(true);
+    speakSegment();
+  }
+
+  // Speak one script line, then wait its `pause` seconds before the next.
+  function speakSegment() {
+    if (!medState.active || medState.type !== "tts") return;
+    const med = medState.item;
+    if (medState.idx >= med.segments.length) { finishMeditation(); return; }
+
+    const seg = med.segments[medState.idx];
+    el.npLine.textContent = seg.say;
+    setMedProgress(medState.idx / med.segments.length);
+
+    const u = new SpeechSynthesisUtterance(seg.say);
+    const chosen = voices[el.voiceSelect.value];
+    if (chosen) u.voice = chosen;
+    u.rate = parseFloat(el.voiceRate.value);
+    u.volume = parseFloat(el.voiceVolume.value);
+    u.onend = () => {
+      if (!medState.active || medState.type !== "tts") return;
+      medState.timer = setTimeout(() => {
+        medState.idx++;
+        speakSegment();
+      }, (seg.pause || 0) * 1000);
+    };
+    window.speechSynthesis.speak(u);
+  }
+
+  function showNowPlaying(title, line) {
+    el.npTitle.textContent = title;
+    el.npLine.textContent = line || "";
+    setMedProgress(0);
+    el.nowPlaying.hidden = false;
+  }
+
+  function setMedProgress(fraction) {
+    const pct = Math.max(0, Math.min(1, fraction)) * 100;
+    el.npBar.style.width = pct + "%";
+  }
+
+  // Reached the natural end of a recording or script.
+  function finishMeditation() {
+    setMedProgress(1);
+    teardownMeditation();
+  }
+
+  // Stop early (tab switch, Stop button, starting another, breathing session).
+  function stopMeditation() {
+    teardownMeditation();
+  }
+
+  function teardownMeditation() {
+    if (medState.timer) { clearTimeout(medState.timer); medState.timer = null; }
+    if (medState.audio) { medState.audio.onended = null; medState.audio.pause(); medState.audio = null; }
+    if (ttsSupported) window.speechSynthesis.cancel();
+    const wasActive = medState.active;
+    medState.active = false;
+    medState.type = null;
+    medState.item = null;
+    medState.idx = 0;
+    setPlayingState(false);
+    el.nowPlaying.hidden = true;
+    if (wasActive && !isRunning) releaseWakeLock();
   }
 
   // ---- Screen Wake Lock --------------------------------------------------
@@ -460,7 +693,6 @@
 
   function stopSession() {
     stopTimers();
-    stopAum();
     releaseWakeLock();
     cancelSpeech();
     isRunning = false;
@@ -495,7 +727,6 @@
   // without reloading the page.
   function resetSession() {
     stopTimers();
-    stopAum();
     releaseWakeLock();
     cancelSpeech();
     isRunning = false;
@@ -520,11 +751,12 @@
       program: el.program.value,
       level: level,
       voiceOn: el.voiceToggle.checked,
-      voiceIndex: el.voiceSelect.value,
+      voiceUri: currentVoiceUri(),
       countdown: el.voiceCountdown.checked,
       rate: el.voiceRate.value,
       volume: el.voiceVolume.value,
       ding: el.dingToggle.checked,
+      loops: loopPrefs,
       custom: {
         reps: el.repetitions.value,
         inhale: el.inhaleTime.value,
@@ -552,7 +784,8 @@
     if (prefs.rate) el.voiceRate.value = prefs.rate;
     if (prefs.volume) el.voiceVolume.value = prefs.volume;
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
-    if (prefs.voiceIndex) el.voiceSelect.dataset.pending = prefs.voiceIndex;
+    if (prefs.loops) Object.assign(loopPrefs, prefs.loops);
+    if (prefs.voiceUri) el.voiceSelect.dataset.pendingUri = prefs.voiceUri;
     if (prefs.custom) {
       el.repetitions.value = prefs.custom.reps ?? el.repetitions.value;
       el.inhaleTime.value = prefs.custom.inhale ?? el.inhaleTime.value;
@@ -578,11 +811,7 @@
       document.getElementById("voiceUnsupported").style.display = "block";
     } else {
       refreshVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        loadVoices();
-        const pending = el.voiceSelect.dataset.pending;
-        if (pending && voices[pending]) el.voiceSelect.value = pending;
-      };
+      window.speechSynthesis.onvoiceschanged = loadVoices;
     }
 
     onProgramChange();
@@ -596,8 +825,25 @@
     // Wiring
     el.controlBtn.addEventListener("click", toggleControl);
     el.resetBtn.addEventListener("click", resetSession);
-    el.aumBtn.addEventListener("click", toggleAum);
     el.program.addEventListener("change", onProgramChange);
+
+    // Tabs + Meditate
+    renderMeditationPicker();
+    el.tabButtons.forEach((b) =>
+      b.addEventListener("click", () => switchTab(b.dataset.tab)));
+    el.meditationSelect.addEventListener("change", () => {
+      // Switching the picker shouldn't keep the previous session playing.
+      if (medState.active) stopMeditation();
+      onMeditationChange();
+    });
+    el.medPlayBtn.addEventListener("click", toggleMedPlay);
+    el.medLoop.addEventListener("change", () => {
+      const entry = medIndex[el.meditationSelect.value];
+      if (entry) loopPrefs[entry.data.id] = el.medLoop.checked;
+      // Apply live if that chant is currently playing.
+      if (medState.type === "audio" && medState.audio) medState.audio.loop = el.medLoop.checked;
+      savePrefs();
+    });
     el.levelControl.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => setLevel(b.dataset.level));
     });
@@ -611,10 +857,22 @@
      el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
       .forEach((node) => node.addEventListener("change", savePrefs));
 
+    // The "see the research ↓" link inside Help opens the (collapsed) Research
+    // section and scrolls to it.
+    const toResearch = document.getElementById("toResearch");
+    const researchSection = document.getElementById("researchSection");
+    if (toResearch && researchSection) {
+      toResearch.addEventListener("click", (e) => {
+        e.preventDefault();
+        researchSection.open = true;
+        researchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
     // iOS releases the wake lock when the tab is hidden; re-acquire it when the
     // user returns mid-session.
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && isRunning && !wakeLock) {
+      if (document.visibilityState === "visible" && (isRunning || medState.active) && !wakeLock) {
         acquireWakeLock();
       }
     });
