@@ -1,8 +1,8 @@
 # References
 
-A bibliography of peer-reviewed research relevant to the breathing programs in
-this app (see `js/programs.js`). Grouped by the technique / count each program
-uses. Citations were gathered from the Semantic Scholar (Asta) corpus.
+A bibliography of peer-reviewed research relevant to the [breathing programs in
+this app](index.html). Grouped by the technique / count each program uses.
+Citations were gathered from the Semantic Scholar (Asta) corpus.
 
 For a narrative overview of what this research says and how it maps to each
 program, see [research.md](research.md).

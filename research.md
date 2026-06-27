@@ -1,8 +1,8 @@
 # The Research Behind the Breathing Programs
 
-This app's programs (`js/programs.js`) are paced-breathing patterns defined by a
-ratio of **inhale : hold (retain) : exhale : hold (sustain)** repeated over a
-number of cycles. The specific counts aren't arbitrary — most map onto breathing
+This app's [breathing programs](index.html) are paced-breathing patterns defined
+by a ratio of **inhale : hold (retain) : exhale : hold (sustain)** repeated over
+a number of cycles. The specific counts aren't arbitrary — most map onto breathing
 techniques that have been studied for their effects on the autonomic nervous
 system, heart rate variability (HRV), mood, anxiety, and sleep.
 
