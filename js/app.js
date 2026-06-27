@@ -105,10 +105,49 @@
   let voices = [];
   let voicePollsLeft = 0;
 
+  // Rank a voice for ordering: the device's exact locale first, then the same
+  // language, then everything else. getVoices() returns an arbitrary order that
+  // otherwise buries the user's own-language voices among dozens of others.
+  function voiceRank(v) {
+    const lang = (v.lang || "").toLowerCase().replace("_", "-");
+    const ui = (navigator.language || "en").toLowerCase();
+    if (lang === ui) return 0;
+    if (lang.split("-")[0] === ui.split("-")[0]) return 1;
+    return 2;
+  }
+
+  function languageLabel(code) {
+    try {
+      const dn = new Intl.DisplayNames([navigator.language || "en"], { type: "language" });
+      return dn.of(code.split("-")[0]) || "Recommended";
+    } catch (e) {
+      return "Recommended";
+    }
+  }
+
+  // Identify the chosen voice by its stable voiceURI (not list position), so the
+  // choice survives re-ordering and newly installed voices.
+  function currentVoiceUri() {
+    const idx = el.voiceSelect.value;
+    if (idx !== "" && voices[idx]) return voices[idx].voiceURI;
+    return el.voiceSelect.dataset.pendingUri || "";
+  }
+
+  function selectVoiceByUri(uri) {
+    if (!uri) return;
+    const i = voices.findIndex((v) => v.voiceURI === uri);
+    if (i >= 0) {
+      el.voiceSelect.value = String(i);
+      el.voiceSelect.dataset.pendingUri = "";
+    } else {
+      el.voiceSelect.dataset.pendingUri = uri;   // not loaded yet — wait for it
+    }
+  }
+
   function loadVoices() {
     if (!ttsSupported) return;
-    const list = window.speechSynthesis.getVoices();
-    if (!list.length) {
+    const raw = window.speechSynthesis.getVoices();
+    if (!raw.length) {
       // iOS may not expose named voices yet; show a default so it's not blank.
       if (!el.voiceSelect.options.length) {
         const opt = document.createElement("option");
@@ -118,16 +157,42 @@
       }
       return;                            // a later poll/event will fill real voices
     }
-    voices = list;
-    const saved = el.voiceSelect.value || el.voiceSelect.dataset.pending;
+
+    const wantUri = currentVoiceUri();
+    // Order: device language first, then same language, then the rest; within
+    // each, the system default voice floats up, then alphabetical by name.
+    voices = raw.slice().sort((a, b) =>
+      voiceRank(a) - voiceRank(b) ||
+      ((b.default === true) - (a.default === true)) ||
+      a.name.localeCompare(b.name));
+
+    const preferred = voices.filter((v) => voiceRank(v) <= 1);
+    const rest = voices.filter((v) => voiceRank(v) > 1);
     el.voiceSelect.innerHTML = "";
-    voices.forEach((v, i) => {
+    const grouped = preferred.length && rest.length;
+    addVoiceOptions(grouped ? languageLabel(navigator.language || "en") : "", preferred);
+    addVoiceOptions(grouped ? "Other languages" : "", rest);
+
+    selectVoiceByUri(wantUri);
+  }
+
+  // Append a set of voices, optionally inside a labelled <optgroup>. Option
+  // values are indices into the sorted `voices` array.
+  function addVoiceOptions(groupLabel, list) {
+    if (!list.length) return;
+    let parent = el.voiceSelect;
+    if (groupLabel) {
+      const og = document.createElement("optgroup");
+      og.label = groupLabel;
+      el.voiceSelect.appendChild(og);
+      parent = og;
+    }
+    list.forEach((v) => {
       const opt = document.createElement("option");
-      opt.value = i;
+      opt.value = voices.indexOf(v);
       opt.textContent = `${v.name} (${v.lang})`;
-      el.voiceSelect.appendChild(opt);
+      parent.appendChild(opt);
     });
-    if (saved && voices[saved]) el.voiceSelect.value = saved;
   }
 
   // Mobile browsers (notably iOS Safari) populate getVoices() asynchronously
@@ -353,11 +418,10 @@
 
   function renderMeditationLists() {
     RECORDINGS.forEach((r) => el.recordingList.appendChild(makeRecordingRow(r)));
-
-    if (ttsSupported) {
-      const guided = MEDITATIONS.map((m) => makeMedItem(m, "tts"));
-      el.meditationList.append(...guided);
-    } else {
+    MEDITATIONS.forEach((m) => el.meditationList.appendChild(makeMedItem(m, "tts")));
+    // Only meditations without a pre-rendered file fall back to speech synthesis.
+    const needsTts = MEDITATIONS.some((m) => !m.file);
+    if (needsTts && !ttsSupported) {
       el.medVoiceNote.hidden = true;
       el.medUnsupported.hidden = false;
     }
@@ -406,7 +470,9 @@
     btn.querySelector(".med-item-time").textContent = mins;
     btn.addEventListener("click", () => {
       if (medState.active && medState.item === data) { stopMeditation(); return; }
-      type === "audio" ? playRecording(data) : playGuided(data);
+      // A pre-rendered narration plays as audio; otherwise fall back to TTS.
+      if (data.file) playRecording(data);
+      else playGuided(data);
     });
     return btn;
   }
@@ -692,7 +758,7 @@
       program: el.program.value,
       level: level,
       voiceOn: el.voiceToggle.checked,
-      voiceIndex: el.voiceSelect.value,
+      voiceUri: currentVoiceUri(),
       countdown: el.voiceCountdown.checked,
       rate: el.voiceRate.value,
       volume: el.voiceVolume.value,
@@ -726,7 +792,7 @@
     if (prefs.volume) el.voiceVolume.value = prefs.volume;
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
     if (prefs.loops) Object.assign(loopPrefs, prefs.loops);
-    if (prefs.voiceIndex) el.voiceSelect.dataset.pending = prefs.voiceIndex;
+    if (prefs.voiceUri) el.voiceSelect.dataset.pendingUri = prefs.voiceUri;
     if (prefs.custom) {
       el.repetitions.value = prefs.custom.reps ?? el.repetitions.value;
       el.inhaleTime.value = prefs.custom.inhale ?? el.inhaleTime.value;
@@ -752,11 +818,7 @@
       document.getElementById("voiceUnsupported").style.display = "block";
     } else {
       refreshVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        loadVoices();
-        const pending = el.voiceSelect.dataset.pending;
-        if (pending && voices[pending]) el.voiceSelect.value = pending;
-      };
+      window.speechSynthesis.onvoiceschanged = loadVoices;
     }
 
     onProgramChange();

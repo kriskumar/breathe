@@ -6,11 +6,13 @@
  *   RECORDINGS  — pre-recorded audio (mp3). Streamed on demand; the first one
  *                 played is cached by the service worker for later offline use.
  *
- *   MEDITATIONS — voice-guided scripts read aloud with the browser's speech
- *                 synthesis, using the same voice settings as the Breathe tab.
- *                 Each script is a list of segments:
- *                   { say: "<spoken line>", pause: <seconds of silence after> }
- *                 The `minutes` field is a rough length estimate for display.
+ *   MEDITATIONS — voice-guided sessions. Each has a `file` (a pre-rendered
+ *                 narration, generated from its `segments` via ElevenLabs) that
+ *                 plays when tapped. If `file` is absent, the `segments` are
+ *                 read aloud with the browser's speech synthesis as a fallback.
+ *                 Each segment is { say: "<line>", pause: <seconds of silence
+ *                 after> }; the `segments` also serve as the source script for
+ *                 regenerating the audio. `minutes` is a rough length for display.
  */
 
 const RECORDINGS = [
@@ -21,6 +23,13 @@ const RECORDINGS = [
     minutes: 1,
     file: "mp3/aum.mp3",
   },
+  {
+    id: "omkar-21",
+    name: "Omkar — 21 Aums",
+    description: "Aum chanted twenty-one times.",
+    minutes: 8,
+    file: "mp3/omkar-21.mp3",
+  },
 ];
 
 const MEDITATIONS = [
@@ -29,6 +38,7 @@ const MEDITATIONS = [
     name: "Breath Awareness",
     description: "A short settling practice — simply following the natural breath.",
     minutes: 3,
+    file: "mp3/breath-awareness.mp3",
     segments: [
       { say: "Find a comfortable position, and let your eyes gently close.", pause: 4 },
       { say: "Allow your body to settle, feeling its weight supported beneath you.", pause: 6 },
@@ -51,7 +61,8 @@ const MEDITATIONS = [
     id: "body-scan",
     name: "Body Scan",
     description: "Release tension by moving attention slowly through the body.",
-    minutes: 5,
+    minutes: 3,
+    file: "mp3/body-scan.mp3",
     segments: [
       { say: "Lie down or sit comfortably, and allow your eyes to close.", pause: 4 },
       { say: "Take a few slow breaths, letting each exhale soften your body a little more.", pause: 8 },
@@ -75,7 +86,8 @@ const MEDITATIONS = [
     id: "loving-kindness",
     name: "Loving-Kindness",
     description: "Offer warm, kind wishes to yourself and others.",
-    minutes: 4,
+    minutes: 2,
+    file: "mp3/loving-kindness.mp3",
     segments: [
       { say: "Settle into a comfortable position, and let your eyes close.", pause: 4 },
       { say: "Take a few easy breaths, and let your heart soften.", pause: 8 },
