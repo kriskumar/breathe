@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>Research · Soham</title>
+    <link rel="stylesheet" href="css/docs.css">
+</head>
+<body>
+    <article class="doc">
+        <a class="back" href="index.html">← Back to Soham</a>
+<h1>The Research Behind the Breathing Programs</h1>
+<p>This app&#39;s programs (<code>js/programs.js</code>) are paced-breathing patterns defined by a
+ratio of <strong>inhale : hold (retain) : exhale : hold (sustain)</strong> repeated over a
+number of cycles. The specific counts aren&#39;t arbitrary — most map onto breathing
+techniques that have been studied for their effects on the autonomic nervous
+system, heart rate variability (HRV), mood, anxiety, and sleep.</p>
+<p>This document summarizes that research and ties it to the app&#39;s presets. Every
+study below links to its paper. Full citations are in
+<a href="references.html">the references</a>.</p>
+<blockquote>
+<p><strong>Note on evidence quality.</strong> Most of these are small acute studies (often
+15–60 participants, single sessions) measuring physiological markers like HRV.
+They consistently point the same direction, but this is wellness guidance, not
+medical advice. People with cardiovascular or respiratory conditions, or who
+are pregnant, should talk to a clinician before doing long breath-holds.</p>
+</blockquote>
+<hr>
+<h2>The one unifying idea: slow breathing shifts you toward &quot;rest and digest&quot;</h2>
+<p>Almost every program here slows the breath below the ~12–16 breaths/min of
+normal rest. Slowing the breath — especially with a longer exhale — increases
+<strong>vagal (parasympathetic) activity</strong>, which shows up as higher HRV, lower heart
+rate, lower blood pressure, and reduced anxiety.</p>
+<ul>
+<li>A 2025 <em>Scientific Reports</em> study,
+<a href="https://doi.org/10.1038/s41598-025-92017-5">Luo et al., &quot;The effect of slow breathing in regulating anxiety&quot;</a>,
+combined paced breathing with an uncertainty-threat task and found slow
+breathing measurably lowered anxiety, with distinct EEG signatures.</li>
+<li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12301348">Iwabe et al. (2025)</a> showed
+slow-paced breathing (4 s in / 6 s out) reduced state anxiety and buffered
+people against aversive images afterward.</li>
+<li>The mechanism is laid out in
+<a href="https://doi.org/10.3389/fphys.2019.01176">Noble &amp; Hochman (2019)</a>: breathing
+near 0.1 Hz (~6 breaths/min) drives <strong>baroreflex resonance</strong>, synchronizing
+heart-rate and blood-pressure rhythms and maximizing HRV.</li>
+<li><a href="https://www.semanticscholar.org/paper/af9a22d6a5747e4bbf56d748ac77b3535bc72107">Malhotra et al. (2021)</a>
+and <a href="https://doi.org/10.1097/PSY.0000000000001354">Balint et al. (2025)</a>
+confirm these acute HRV increases hold even in clinical populations (the latter
+in hospitalized COVID-19 pneumonia patients, using a 4 s in / 6 s out pace).</li>
+</ul>
+<p>So the broad claim the app rests on is well supported: <strong>slow, paced breathing
+acutely calms the nervous system.</strong> The interesting differences are in <em>how</em> the
+counts are arranged.</p>
+<hr>
+<h2>Coherent breathing (5-5, ~6 breaths/min) → program: <strong>Coherent</strong></h2>
+<p>The app&#39;s <strong>Coherent</strong> program uses <code>[5, 0, 5, 0]</code> — a 5-second inhale and
+5-second exhale, no holds, which is exactly <strong>6 breaths per minute (0.1 Hz)</strong>.
+This is the single most-studied rate in the literature, often called <em>resonance
+frequency</em> or <em>resonance paced</em> breathing.</p>
+<ul>
+<li><a href="https://doi.org/10.3389/fpubh.2017.00222">Steffen et al. (2017)</a>
+experimentally isolated ~6 breaths/min as the driver of HRV improvement,
+along with better mood and lower systolic blood pressure.</li>
+<li><a href="https://doi.org/10.1016/j.clinph.2019.11.013">Schwerdtfeger et al. (2019)</a>
+review why 0.1 Hz oscillations matter for heart–brain coupling.</li>
+<li>A 2024 systematic review,
+<a href="https://doi.org/10.36950/2024.2ciss080">Vukojević, Vater &amp; Laborde</a>
+(17 studies, 810 participants), reports broad psychological benefits
+(attention, sleep, relaxation, lower anxiety/depression) and physiological ones
+(higher baroreflex gain, lower blood pressure).</li>
+<li><a href="https://doi.org/10.1111/psyp.70263">Bates et al. (2026)</a> used fMRI (N=147) to
+show resonance breathing at 0.1 Hz increases connectivity in the brain&#39;s
+central autonomic network, especially the insula.</li>
+</ul>
+<p><strong>Takeaway for the app:</strong> Coherent is the best-evidenced preset for raising HRV
+and is a safe, general-purpose default. One caveat from
+<a href="https://doi.org/10.1007/s10484-023-09605-2">You, Laborde et al. (2023)</a>:
+the optimal rate varies per person within roughly <strong>5–7 breaths/min</strong>, so 5-5 is
+a sensible center but not magic for everyone.</p>
+<hr>
+<h2>Extended exhale (exhale longer than inhale) → programs: <strong>Clear Mind, Relax 1, Relax 3, Anti-Stress, Calming 3, Decision-Making</strong></h2>
+<p>Several programs deliberately make the <strong>exhale longer than the inhale</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Program</th>
+<th>Ratio (in-hold-out-hold)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clear Mind</td>
+<td><code>[1,0,3,0]</code>→<code>[1,0,5,0]</code></td>
+<td>exhale 3–5× the inhale</td>
+</tr>
+<tr>
+<td>Relax 1</td>
+<td><code>[1,0,2,2]</code></td>
+<td>1:2 with an empty-lung hold</td>
+</tr>
+<tr>
+<td>Relax 3</td>
+<td><code>[7,0,11,0]</code></td>
+<td>long inhale, longer exhale</td>
+</tr>
+<tr>
+<td>Anti-Stress</td>
+<td><code>[3,0,0.66,0]</code></td>
+<td>(note: this one is <em>inhale</em>-dominant)</td>
+</tr>
+<tr>
+<td>Decision-Making</td>
+<td><code>[5,2,7,0]</code></td>
+<td>exhale &gt; inhale with a brief hold</td>
+</tr>
+</tbody></table>
+<p>The key study here is
+<a href="https://doi.org/10.1111/psyp.13905">Bae et al. (2021)</a>: increasing the
+<strong>exhale-to-inhale ratio to 2:1 raised vagal HRV markers (RMSSD, HF-HRV) without
+even changing the overall breathing rate</strong> — and the effect persisted for
+minutes afterward. This directly validates the design choice behind the
+extended-exhale programs.</p>
+<p><a href="https://doi.org/10.1007/s10484-020-09485-w">Röttger et al. (2020)</a> adds nuance
+by comparing prolonged exhalation against tactical (box-style) breathing under
+stress: prolonged exhalation lowered arousal <em>and</em> supported better performance
+when active coping was required, while box breathing suited passive coping. In
+other words, extended-exhale patterns are a good fit for &quot;calm down and act&quot;
+situations — which is essentially what <strong>Decision-Making</strong> targets.</p>
+<hr>
+<h2>4-7-8 breathing → program: <strong>Relax 2 (4-7-8)</strong></h2>
+<p><strong>Relax 2</strong> is the classic 4-7-8: inhale 4, hold 7, exhale 8 (<code>[4,7,8,0]</code>). It
+combines a long exhale <em>and</em> a substantial breath-hold, and it&#39;s popular as a
+sleep aid.</p>
+<ul>
+<li><a href="https://doi.org/10.24843/mifi.000001111">Mualifah &amp; Herawati (2026)</a>, a
+controlled study of 110 students, found 4-7-8 practiced twice daily for two
+weeks significantly improved sleep quality (large effect size on the PSQI).</li>
+<li><a href="https://doi.org/10.1145/3745034.3745106">Zhang &amp; Zhu (2025)</a> measured acute
+drops in heart rate and the LF/HF ratio (toward parasympathetic dominance)
+during 4-7-8 breathing.</li>
+<li>It&#39;s also been used for acute pain and anxiety, e.g.
+<a href="https://doi.org/10.17509/jpki.v11i2.85911">Azizah et al. (2025)</a> on
+postoperative pain.</li>
+</ul>
+<p><strong>Important caveat:</strong> the head-to-head study
+<a href="https://doi.org/10.1007/s10484-025-09688-z">Marchant et al. (2025)</a> found that
+while 4-7-8 is effective, <strong>6 breaths/min (Coherent) raised HRV more</strong> — though
+6 bpm also carried a higher risk of <em>over-breathing</em> (lowering CO₂ too much).
+4-7-8&#39;s longer hold and exhale may make it gentler on CO₂ levels, which is part
+of why it feels settling before sleep.</p>
+<hr>
+<h2>Box breathing (4-4-4-4) → program: <strong>Box</strong></h2>
+<p><strong>Box</strong> uses equal <code>[4,4,4,4]</code> — inhale, hold, exhale, hold, all 4 seconds. It&#39;s
+the &quot;tactical breathing&quot; used in military and first-responder training.</p>
+<ul>
+<li><a href="https://doi.org/10.17309/tmfv.2026.1.15">Ovs et al. (2026)</a> found a 6-week box
+breathing program (with wearable HR feedback) produced large improvements in
+athletes&#39; real-time decision-making and lowered resting heart rate.</li>
+<li><a href="https://doi.org/10.1249/MSS.0000000000003972">Jones et al. (2026)</a>, an RCT in
+tactical cadets, showed box breathing accelerated parasympathetic
+reactivation (HF-HRV recovery) after maximal exertion.</li>
+</ul>
+<p>But two comparison studies temper the enthusiasm for box breathing as a <em>calming</em>
+tool specifically:</p>
+<ul>
+<li><a href="https://doi.org/10.1007/s10484-025-09688-z">Marchant et al. (2025)</a>: box
+(&quot;square&quot;) breathing raised HRV less than 6 bpm.</li>
+<li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12622787">Kasap &amp; Aydın (2025)</a>:
+after high-intensity exercise, box breathing produced <em>higher</em> post-exercise
+heart rate and perceived exertion than 6 bpm — i.e., the breath-holds add a
+mild stressor.</li>
+</ul>
+<p><strong>Takeaway:</strong> Box is excellent for focus, composure, and performance under
+pressure, but if the goal is pure relaxation, Coherent or an extended-exhale
+program may edge it out.</p>
+<hr>
+<h2>Breath retention / holds (kumbhaka) → programs: <strong>Power, Harmony, Calming 1, Calming 2, Fire, Retention, Swooning, Energizing, Anti-Appetite</strong></h2>
+<p>Many programs build in <strong>holds</strong>, either after the inhale (lungs full — <em>retain</em>)
+or after the exhale (lungs empty — <em>sustain</em>). Examples: Power <code>[1,2,2,0]</code>,
+Harmony <code>[1,3,2,1]</code>, Swooning <code>[5,10,7,0]</code> (a long full-lung hold), Retention
+<code>[2,0,2,12]</code> and Fire <code>[3,0,5,12]</code> (long empty-lung holds).</p>
+<p>This is the <strong>least precisely studied</strong> part of the app. Breath retention is
+studied mostly under the umbrella of <em>kumbhaka</em> pranayama rather than at the
+specific counts the app uses:</p>
+<ul>
+<li><a href="https://doi.org/10.4103/ym.ym_21_19">Saisupriya et al. (2020)</a> studied a
+1:3:2 inhale:hold:exhale ratio (6:18:12 s) with retention and found it shifted
+participants toward parasympathetic dominance (lower HR, higher RMSSD/HF) — a
+pattern echoing the app&#39;s holds-heavy designs.</li>
+<li><a href="https://doi.org/10.4103/0976-3147.193532">Nivethitha et al. (2017)</a> found
+breath retention (kumbhaka) and forceful breathing (bhastrika) have <strong>opposite</strong>
+effects on cerebral blood flow — a reminder that holds are physiologically
+active, not neutral pauses.</li>
+</ul>
+<p><strong>Takeaway:</strong> The general principle (holds + slow breathing → parasympathetic
+shift, used for energy/focus in shorter forms and deep relaxation in longer
+forms) is supported, but the <em>exact</em> counts in Power, Fire, Retention, Swooning,
+etc. are extrapolations from the broader pranayama tradition rather than
+directly validated. Longer empty-lung holds (Fire, Retention) are the most
+demanding and least studied — worth a gentle in-app note for beginners.</p>
+<hr>
+<h2>Structured multi-technique breathwork (zooming out)</h2>
+<p>A landmark RCT from Stanford,
+<a href="https://doi.org/10.1016/j.xcrm.2022.100895">Balban et al. (2023) in <em>Cell Reports Medicine</em></a>,
+compared three 5-minute daily breathwork practices against mindfulness
+meditation over a month:</p>
+<ol>
+<li><strong>Cyclic sighing</strong> (emphasizing prolonged exhalation),</li>
+<li><strong>Box breathing</strong> (equal in/hold/out/hold), and</li>
+<li><strong>Cyclic hyperventilation with retention</strong>.</li>
+</ol>
+<p>All improved mood and lowered arousal, but <strong>exhale-focused cyclic sighing
+produced the biggest mood improvement and respiratory-rate reduction</strong> — again
+underscoring the recurring theme that <strong>the exhale is where the calming happens</strong>.
+This supports the app&#39;s emphasis on extended-exhale and long-exhale-with-hold
+programs (Clear Mind, Relax 1/2/3, Calming series).</p>
+<hr>
+<h2>Practical mapping: which program, which goal?</h2>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Best-supported program(s)</th>
+<th>Key evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Raise HRV / general calm</td>
+<td><strong>Coherent</strong> (5-5)</td>
+<td><a href="https://doi.org/10.3389/fpubh.2017.00222">Steffen 2017</a>, <a href="https://doi.org/10.1007/s10484-025-09688-z">Marchant 2025</a></td>
+</tr>
+<tr>
+<td>Reduce anxiety in the moment</td>
+<td><strong>Coherent</strong>, <strong>Clear Mind</strong>, <strong>Relax</strong> series</td>
+<td><a href="https://doi.org/10.1038/s41598-025-92017-5">Luo 2025</a>, <a href="https://doi.org/10.1111/psyp.13905">Bae 2021</a></td>
+</tr>
+<tr>
+<td>Wind down for sleep</td>
+<td><strong>Relax 2 (4-7-8)</strong></td>
+<td><a href="https://doi.org/10.24843/mifi.000001111">Mualifah 2026</a>, <a href="https://doi.org/10.1145/3745034.3745106">Zhang 2025</a></td>
+</tr>
+<tr>
+<td>Focus / composure under pressure</td>
+<td><strong>Box</strong> (4-4-4-4)</td>
+<td><a href="https://doi.org/10.17309/tmfv.2026.1.15">Ovs 2026</a>, <a href="https://doi.org/10.1249/MSS.0000000000003972">Jones 2026</a></td>
+</tr>
+<tr>
+<td>Think clearly before acting</td>
+<td><strong>Decision-Making</strong>, extended-exhale</td>
+<td><a href="https://doi.org/10.1007/s10484-020-09485-w">Röttger 2020</a></td>
+</tr>
+<tr>
+<td>Recover after exertion</td>
+<td><strong>Coherent</strong> over Box</td>
+<td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12622787">Kasap 2025</a></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Gaps and honest caveats</h2>
+<ul>
+<li><strong>Long breath-holds</strong> (Power, Fire, Retention, Swooning, Energizing) are the
+least directly validated at the app&#39;s specific counts — studied mostly as
+generic <em>kumbhaka</em> pranayama.</li>
+<li><strong>Over-breathing risk:</strong> faster or deeper paced breathing (including 6 bpm if
+done with large tidal volumes) can lower CO₂ uncomfortably
+(<a href="https://doi.org/10.1007/s10484-025-09688-z">Marchant 2025</a>). Encourage gentle,
+not forceful, breaths.</li>
+<li><strong>Acute vs. lasting effects:</strong> most evidence is for <em>immediate</em> effects during
+or just after a session. Durable benefits (sleep, trait anxiety) appear with
+<em>regular daily practice</em> over weeks
+(<a href="https://doi.org/10.24843/mifi.000001111">Mualifah 2026</a>,
+<a href="https://doi.org/10.1016/j.xcrm.2022.100895">Balban 2023</a>).</li>
+</ul>
+<hr>
+<p><em>Compiled from the Semantic Scholar (Asta) research corpus. See
+<a href="references.html">the references</a> for full citations.</em></p>
+    </article>
+</body>
+</html>
