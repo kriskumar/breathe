@@ -44,7 +44,6 @@
     npTitle: document.getElementById("npTitle"),
     npLine: document.getElementById("npLine"),
     npBar: document.getElementById("npBar"),
-    npStop: document.getElementById("npStop"),
   };
 
   const PREFS_KEY = "breathe.prefs";
@@ -845,7 +844,6 @@
       if (medState.type === "audio" && medState.audio) medState.audio.loop = el.medLoop.checked;
       savePrefs();
     });
-    el.npStop.addEventListener("click", stopMeditation);
     el.levelControl.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => setLevel(b.dataset.level));
     });

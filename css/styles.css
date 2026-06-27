@@ -435,22 +435,6 @@ button {
     transition: width 0.3s linear;
 }
 
-.np-stop {
-    align-self: center;
-    background: #fff;
-    color: #764ba2;
-    border: 2px solid #d4c9ec;
-    border-radius: 999px;
-    padding: 9px 28px;
-    font-size: 14px;
-    text-transform: none;
-}
-
-.np-stop:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(118, 75, 162, 0.2);
-}
-
 .hint {
     text-align: center;
     font-size: 0.8em;
