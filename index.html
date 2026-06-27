@@ -131,15 +131,29 @@
         </div><!-- /breathePanel -->
 
         <div class="tab-panel" id="meditatePanel" hidden>
-            <p class="program-description">Tap a session to begin — a chant to rest in, or a narrated meditation to follow.</p>
+            <div class="settings">
+                <div class="input-group">
+                    <label for="meditationSelect">Meditation</label>
+                    <select id="meditationSelect"></select>
+                </div>
 
-            <h2 class="med-heading">🎧 Chants</h2>
-            <div class="med-list" id="recordingList"></div>
+                <p class="program-description" id="meditationDescription"></p>
 
-            <h2 class="med-heading">🧘 Guided meditations</h2>
-            <p class="med-note" id="medVoiceNote">Gently narrated sessions — find a comfortable position and follow along.</p>
-            <p class="med-note" id="medUnsupported" hidden>Some sessions need speech support, which this browser doesn't offer. The chants above still work.</p>
-            <div class="med-list" id="meditationList"></div>
+                <div class="toggle-row" id="medLoopRow" hidden>
+                    <label for="medLoop">🔁 Loop</label>
+                    <label class="switch">
+                        <input type="checkbox" id="medLoop">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <p class="med-note" id="medVoiceNote">Gently narrated sessions — pick one, find a comfortable position, and press Play.</p>
+            <p class="med-note" id="medUnsupported" hidden>Some sessions need speech support, which this browser doesn't offer. The chants still work.</p>
+
+            <div class="controls">
+                <button class="start-btn" id="medPlayBtn">▶ Play</button>
+            </div>
 
             <div class="now-playing" id="nowPlaying" hidden>
                 <div class="np-info">

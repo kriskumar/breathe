@@ -33,8 +33,11 @@
     tabButtons: document.querySelectorAll(".tab-btn"),
     breathePanel: document.getElementById("breathePanel"),
     meditatePanel: document.getElementById("meditatePanel"),
-    recordingList: document.getElementById("recordingList"),
-    meditationList: document.getElementById("meditationList"),
+    meditationSelect: document.getElementById("meditationSelect"),
+    meditationDescription: document.getElementById("meditationDescription"),
+    medLoopRow: document.getElementById("medLoopRow"),
+    medLoop: document.getElementById("medLoop"),
+    medPlayBtn: document.getElementById("medPlayBtn"),
     medUnsupported: document.getElementById("medUnsupported"),
     medVoiceNote: document.getElementById("medVoiceNote"),
     nowPlaying: document.getElementById("nowPlaying"),
@@ -408,18 +411,38 @@
     el.meditatePanel.hidden = name !== "meditate";
   }
 
-  // ---- Meditate tab: recordings (audio) + guided scripts (TTS) ------------
+  // ---- Meditate tab: a picker + description box, then Play ----------------
   // One playback at a time. medState tracks whichever is active so switching
   // tabs, starting another, or pressing Stop can cleanly tear it down.
   const medState = { active: false, type: null, audio: null, timer: null, item: null, idx: 0 };
 
-  // Per-recording loop checkboxes, keyed by recording id.
-  const loopToggles = {};
+  // id -> { data, type } for every chant and guided meditation in the picker.
+  const medIndex = {};
 
-  function renderMeditationLists() {
-    RECORDINGS.forEach((r) => el.recordingList.appendChild(makeRecordingRow(r)));
-    MEDITATIONS.forEach((m) => el.meditationList.appendChild(makeMedItem(m, "tts")));
-    // Only meditations without a pre-rendered file fall back to speech synthesis.
+  // Build the dropdown (Chants + Guided meditations as optgroups) and show the
+  // description for the initial selection.
+  function renderMeditationPicker() {
+    const groups = [
+      { label: "🎧 Chants", items: RECORDINGS, type: "audio" },
+      { label: "🧘 Guided meditations", items: MEDITATIONS, type: "tts" },
+    ];
+    groups.forEach((g) => {
+      if (!g.items.length) return;
+      const og = document.createElement("optgroup");
+      og.label = g.label;
+      g.items.forEach((data) => {
+        medIndex[data.id] = { data, type: g.type };
+        const opt = document.createElement("option");
+        opt.value = data.id;
+        opt.textContent = data.minutes ? `${data.name} · ${data.minutes} min` : data.name;
+        og.appendChild(opt);
+      });
+      el.meditationSelect.appendChild(og);
+    });
+    onMeditationChange();
+
+    // Guided meditations ship a pre-rendered file; speech synthesis is only a
+    // fallback. Warn only if a file-less meditation exists and TTS is missing.
     const needsTts = MEDITATIONS.some((m) => !m.file);
     if (needsTts && !ttsSupported) {
       el.medVoiceNote.hidden = true;
@@ -427,54 +450,30 @@
     }
   }
 
-  // A recording row = the play button plus a loop toggle beside it.
-  function makeRecordingRow(rec) {
-    const row = document.createElement("div");
-    row.className = "med-row";
-
-    const loop = document.createElement("label");
-    loop.className = "med-loop";
-    loop.title = "Loop this recording";
-    loop.innerHTML = '<input type="checkbox"><span aria-hidden="true">🔁</span>';
-    const cb = loop.querySelector("input");
-    cb.checked = !!loopPrefs[rec.id];
-    cb.addEventListener("change", () => {
-      // Apply live if this recording is playing, and remember the choice.
-      if (medState.type === "audio" && medState.item === rec && medState.audio) {
-        medState.audio.loop = cb.checked;
-      }
-      loopPrefs[rec.id] = cb.checked;
-      savePrefs();
-    });
-    loopToggles[rec.id] = cb;
-
-    row.append(makeMedItem(rec, "audio"), loop);
-    return row;
+  // Update the description box (and the loop toggle) for the chosen session.
+  function onMeditationChange() {
+    const entry = medIndex[el.meditationSelect.value];
+    if (!entry) return;
+    el.meditationDescription.textContent = entry.data.description || "";
+    // Loop only makes sense for the repeating chants, not narrated scripts.
+    const isAudio = entry.type === "audio";
+    el.medLoopRow.hidden = !isAudio;
+    if (isAudio) el.medLoop.checked = !!loopPrefs[entry.data.id];
   }
 
-  function makeMedItem(data, type) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "med-item";
-    btn.dataset.medId = data.id;
-    const mins = data.minutes ? `${data.minutes} min` : "";
-    btn.innerHTML =
-      '<span class="med-item-icon">▶</span>' +
-      '<span class="med-item-text">' +
-        '<span class="med-item-name"></span>' +
-        '<span class="med-item-desc"></span>' +
-      "</span>" +
-      '<span class="med-item-time"></span>';
-    btn.querySelector(".med-item-name").textContent = data.name;
-    btn.querySelector(".med-item-desc").textContent = data.description || "";
-    btn.querySelector(".med-item-time").textContent = mins;
-    btn.addEventListener("click", () => {
-      if (medState.active && medState.item === data) { stopMeditation(); return; }
-      // A pre-rendered narration plays as audio; otherwise fall back to TTS.
-      if (data.file) playRecording(data);
-      else playGuided(data);
-    });
-    return btn;
+  // The Play button toggles: start the selected session, or stop the running one.
+  function toggleMedPlay() {
+    if (medState.active) { stopMeditation(); return; }
+    const entry = medIndex[el.meditationSelect.value];
+    if (!entry) return;
+    // A pre-rendered narration (or chant) plays as audio; otherwise fall to TTS.
+    if (entry.data.file) playRecording(entry.data);
+    else playGuided(entry.data);
+  }
+
+  function setPlayingState(on) {
+    el.medPlayBtn.textContent = on ? "⏹ Stop" : "▶ Play";
+    el.medPlayBtn.classList.toggle("is-playing", on);
   }
 
   function playRecording(rec) {
@@ -483,11 +482,12 @@
     medState.type = "audio";
     medState.item = rec;
     const audio = new Audio(rec.file);
-    audio.loop = !!(loopToggles[rec.id] && loopToggles[rec.id].checked);
+    // Loop applies only to chants (the loop row is visible for them).
+    audio.loop = !el.medLoopRow.hidden && !!el.medLoop.checked;
     medState.audio = audio;
     acquireWakeLock();
     showNowPlaying(rec.name, "");
-    markActiveItem(rec.id);
+    setPlayingState(true);
     // Scope callbacks to this audio instance so a late `ended`/rejected play()
     // from a superseded recording can't tear down a newer session.
     const isCurrent = () => medState.audio === audio;
@@ -511,7 +511,7 @@
     window.speechSynthesis.cancel();
     refreshVoices();
     showNowPlaying(med.name, "");
-    markActiveItem(med.id);
+    setPlayingState(true);
     speakSegment();
   }
 
@@ -552,12 +552,6 @@
     el.npBar.style.width = pct + "%";
   }
 
-  function markActiveItem(id) {
-    document.querySelectorAll(".med-item").forEach((b) => {
-      b.classList.toggle("playing", b.dataset.medId === id);
-    });
-  }
-
   // Reached the natural end of a recording or script.
   function finishMeditation() {
     setMedProgress(1);
@@ -578,7 +572,7 @@
     medState.type = null;
     medState.item = null;
     medState.idx = 0;
-    markActiveItem(null);
+    setPlayingState(false);
     el.nowPlaying.hidden = true;
     if (wasActive && !isRunning) releaseWakeLock();
   }
@@ -835,9 +829,22 @@
     el.program.addEventListener("change", onProgramChange);
 
     // Tabs + Meditate
-    renderMeditationLists();
+    renderMeditationPicker();
     el.tabButtons.forEach((b) =>
       b.addEventListener("click", () => switchTab(b.dataset.tab)));
+    el.meditationSelect.addEventListener("change", () => {
+      // Switching the picker shouldn't keep the previous session playing.
+      if (medState.active) stopMeditation();
+      onMeditationChange();
+    });
+    el.medPlayBtn.addEventListener("click", toggleMedPlay);
+    el.medLoop.addEventListener("change", () => {
+      const entry = medIndex[el.meditationSelect.value];
+      if (entry) loopPrefs[entry.data.id] = el.medLoop.checked;
+      // Apply live if that chant is currently playing.
+      if (medState.type === "audio" && medState.audio) medState.audio.loop = el.medLoop.checked;
+      savePrefs();
+    });
     el.npStop.addEventListener("click", stopMeditation);
     el.levelControl.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => setLevel(b.dataset.level));
