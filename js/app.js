@@ -25,7 +25,6 @@
     toneToggle: document.getElementById("toneToggle"),
     vibrateRow: document.getElementById("vibrateRow"),
     vibrateToggle: document.getElementById("vibrateToggle"),
-    introToggle: document.getElementById("introToggle"),
     goalChips: document.getElementById("goalChips"),
     nudge: document.getElementById("nudge"),
     circle: document.getElementById("breathingCircle"),
@@ -541,9 +540,9 @@
   }
 
   // ---- Build the session schedule ---------------------------------------
-  function buildSchedule(settings, skipPrep) {
+  function buildSchedule(settings) {
     const steps = [];
-    if (settings.pre > 0 && !skipPrep) {
+    if (settings.pre > 0) {
       steps.push({ key: "prep", label: "Settle in", say: "Find a comfortable seat, or lie down on your back, and settle in.", seconds: settings.pre, cycle: 0 });
     }
     for (let c = 1; c <= settings.cycles; c++) {
@@ -576,8 +575,7 @@
   // ---- Engine ------------------------------------------------------------
   function startSession() {
     const settings = resolveSettings();
-    const usingIntro = !!(el.introToggle && el.introToggle.checked);
-    schedule = buildSchedule(settings, usingIntro);  // recorded intro replaces the spoken settle
+    schedule = buildSchedule(settings);
     if (schedule.length === 0) return;
 
     stopMeditation();  // never overlap a meditation with a breathing session
@@ -590,6 +588,7 @@
     el.controlBtn.textContent = "Stop";
     setControlsDisabled(true);
     acquireWakeLock();
+    startAmbient();
 
     // A user gesture (the Start click) is required to unlock audio on mobile;
     // it's also when iOS first exposes the voice list, so refresh it here.
@@ -598,41 +597,13 @@
       refreshVoices();
     }
 
-    if (usingIntro) playIntro();
-    else beginBreathing();
+    beginBreathing();
   }
 
   function beginBreathing() {
     if (!isRunning) return;
-    startAmbient();   // start ambience with the breathing, not under the intro
     enterPhase(schedule[0]);
     tickTimer = setInterval(tick, 100);
-  }
-
-  // Optional recorded "settle in" intro (mp3/settle.mp3). It plays alone during
-  // the settle, then hands the audio session to the breathing voice. Plays via
-  // an <audio> element but is fully released on end so iOS doesn't leave the
-  // speech engine muted (the same pattern as the Aum). Falls back to breathing
-  // if the file is missing or playback is blocked.
-  let introAudio = null;
-
-  function playIntro() {
-    el.circle.className = "breathing-circle phase-prep";
-    el.circle.style.transition = "transform 0.3s ease-in-out";
-    el.circle.style.transform = "scale(1)";
-    el.instruction.textContent = "Settle in";
-    el.circleCount.textContent = "";
-    el.progress.textContent = "Settle in…";
-
-    if (!introAudio) introAudio = new Audio("mp3/settle.mp3");
-    introAudio.currentTime = 0;
-    introAudio.onended = () => { introAudio.pause(); if (isRunning) beginBreathing(); };
-    const played = introAudio.play();
-    if (played && played.catch) played.catch(() => { if (isRunning) beginBreathing(); });
-  }
-
-  function stopIntro() {
-    if (introAudio) { introAudio.onended = null; introAudio.pause(); }
   }
 
   // ---- Tabs --------------------------------------------------------------
@@ -928,7 +899,6 @@
 
   function completeSession() {
     stopTimers();
-    stopIntro();
     stopAmbient();
     isRunning = false;
     el.controlBtn.textContent = "Start";
@@ -956,7 +926,6 @@
 
   function stopSession() {
     stopTimers();
-    stopIntro();
     stopAmbient();
     releaseWakeLock();
     cancelSpeech();
@@ -980,7 +949,7 @@
     el.retainTime.disabled = disabled;
     el.exhaleTime.disabled = disabled;
     el.sustainTime.disabled = disabled;
-    [el.paceBpm, el.ambientSelect, el.toneToggle, el.vibrateToggle, el.introToggle,
+    [el.paceBpm, el.ambientSelect, el.toneToggle, el.vibrateToggle,
      el.patternName, el.savePatternBtn, el.deletePatternBtn]
       .forEach((n) => { if (n) n.disabled = disabled; });
     el.levelControl.querySelectorAll("button").forEach((b) => (b.disabled = disabled));
@@ -996,7 +965,6 @@
   // without reloading the page.
   function resetSession() {
     stopTimers();
-    stopIntro();
     stopAmbient();
     releaseWakeLock();
     cancelSpeech();
@@ -1030,7 +998,6 @@
       ding: el.dingToggle.checked,
       tone: el.toneToggle ? el.toneToggle.checked : false,
       vibrate: el.vibrateToggle ? el.vibrateToggle.checked : false,
-      intro: el.introToggle ? el.introToggle.checked : false,
       ambient: el.ambientSelect ? el.ambientSelect.value : "none",
       ambientVol: el.ambientVolume ? el.ambientVolume.value : "0.5",
       paceBpm: el.paceBpm ? el.paceBpm.value : "6",
@@ -1065,7 +1032,6 @@
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
     if (typeof prefs.tone === "boolean" && el.toneToggle) el.toneToggle.checked = prefs.tone;
     if (typeof prefs.vibrate === "boolean" && el.vibrateToggle) el.vibrateToggle.checked = prefs.vibrate;
-    if (typeof prefs.intro === "boolean" && el.introToggle) el.introToggle.checked = prefs.intro;
     if (prefs.ambient && el.ambientSelect) el.ambientSelect.value = prefs.ambient;
     if (prefs.ambientVol && el.ambientVolume) el.ambientVolume.value = prefs.ambientVol;
     if (prefs.paceBpm && el.paceBpm) el.paceBpm.value = prefs.paceBpm;
@@ -1254,7 +1220,7 @@
       savePrefs();
     });
     [el.voiceSelect, el.voiceCountdown, el.voiceRate, el.voiceVolume, el.dingToggle,
-     el.toneToggle, el.vibrateToggle, el.introToggle, el.ambientSelect, el.ambientVolume, el.paceBpm,
+     el.toneToggle, el.vibrateToggle, el.ambientSelect, el.ambientVolume, el.paceBpm,
      el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
       .filter(Boolean)
       .forEach((node) => node.addEventListener("change", savePrefs));
