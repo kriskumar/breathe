@@ -827,3 +827,54 @@ input[type="text"]:focus {
     border-color: #433d5e;
     color: #ece9f6;
 }
+
+/* ---- Goal quick-pick chips + daily nudge (P2) ------------------------- */
+.goal-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.goal-chip {
+    flex: 1 1 0;
+    min-width: 70px;
+    padding: 10px 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+    text-transform: none;
+    border: 2px solid #ddd;
+    background: #fff;
+    color: #555;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.goal-chip:hover {
+    border-color: #a98fe0;
+    transform: translateY(-1px);
+}
+
+.nudge {
+    text-align: center;
+    font-size: 0.92em;
+    color: #5b4a82;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(196, 113, 245, 0.1) 100%);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    line-height: 1.4;
+}
+
+.nudge[hidden] { display: none; }
+
+[data-theme="dark"] .goal-chip {
+    background: #2c2842;
+    border-color: #433d5e;
+    color: #c3bcd9;
+}
+
+[data-theme="dark"] .nudge {
+    color: #cabfe8;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.14) 0%, rgba(196, 113, 245, 0.16) 100%);
+}

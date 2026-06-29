@@ -23,6 +23,10 @@
     ambientSelect: document.getElementById("ambientSelect"),
     ambientVolume: document.getElementById("ambientVolume"),
     toneToggle: document.getElementById("toneToggle"),
+    vibrateRow: document.getElementById("vibrateRow"),
+    vibrateToggle: document.getElementById("vibrateToggle"),
+    goalChips: document.getElementById("goalChips"),
+    nudge: document.getElementById("nudge"),
     circle: document.getElementById("breathingCircle"),
     instruction: document.getElementById("instruction"),
     circleCount: document.getElementById("circleCount"),
@@ -820,8 +824,18 @@
     if (ttsSupported) window.speechSynthesis.cancel();
     speak(step.say);
     playPhaseTone(step.key);
+    vibratePhase(step.key);
 
     updateDisplay(Math.ceil(step.seconds));
+  }
+
+  // Haptic cue at each phase start (Android/desktop; iOS Safari has no
+  // Vibration API, so the toggle is hidden there and this is a no-op).
+  function vibratePhase(key) {
+    if (!el.vibrateToggle || !el.vibrateToggle.checked || !("vibrate" in navigator)) return;
+    if (key === "prep") return;
+    if (key === "inhale" || key === "inhale2" || key === "exhale") navigator.vibrate(45);
+    else navigator.vibrate(18);   // holds: a faint tap
   }
 
   // Drive the circle to expand on inhale, contract on exhale, and hold size
@@ -933,9 +947,11 @@
     el.retainTime.disabled = disabled;
     el.exhaleTime.disabled = disabled;
     el.sustainTime.disabled = disabled;
-    [el.paceBpm, el.ambientSelect, el.toneToggle, el.patternName, el.savePatternBtn, el.deletePatternBtn]
+    [el.paceBpm, el.ambientSelect, el.toneToggle, el.vibrateToggle,
+     el.patternName, el.savePatternBtn, el.deletePatternBtn]
       .forEach((n) => { if (n) n.disabled = disabled; });
     el.levelControl.querySelectorAll("button").forEach((b) => (b.disabled = disabled));
+    if (el.goalChips) el.goalChips.querySelectorAll(".goal-chip").forEach((c) => (c.disabled = disabled));
   }
 
   function toggleControl() {
@@ -979,6 +995,7 @@
       volume: el.voiceVolume.value,
       ding: el.dingToggle.checked,
       tone: el.toneToggle ? el.toneToggle.checked : false,
+      vibrate: el.vibrateToggle ? el.vibrateToggle.checked : false,
       ambient: el.ambientSelect ? el.ambientSelect.value : "none",
       ambientVol: el.ambientVolume ? el.ambientVolume.value : "0.5",
       paceBpm: el.paceBpm ? el.paceBpm.value : "6",
@@ -1012,6 +1029,7 @@
     if (prefs.volume) el.voiceVolume.value = prefs.volume;
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
     if (typeof prefs.tone === "boolean" && el.toneToggle) el.toneToggle.checked = prefs.tone;
+    if (typeof prefs.vibrate === "boolean" && el.vibrateToggle) el.vibrateToggle.checked = prefs.vibrate;
     if (prefs.ambient && el.ambientSelect) el.ambientSelect.value = prefs.ambient;
     if (prefs.ambientVol && el.ambientVolume) el.ambientVolume.value = prefs.ambientVol;
     if (prefs.paceBpm && el.paceBpm) el.paceBpm.value = prefs.paceBpm;
@@ -1072,6 +1090,7 @@
     if (hist.length > 1000) hist.splice(0, hist.length - 1000);
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch (e) { /* ignore */ }
     renderStats();
+    renderNudge();
   }
 
   function dayKey(ts) {
@@ -1106,6 +1125,23 @@
     el.statsLine.hidden = false;
   }
 
+  // A gentle, honest in-app nudge based on local history (no notifications,
+  // no backend — reliable and private). Reliable daily push reminders would
+  // need a push server, which we deliberately avoid.
+  function renderNudge() {
+    if (!el.nudge) return;
+    const hist = loadHistory();
+    if (!hist.length) { el.nudge.hidden = true; return; }
+    const practicedToday = hist.some((e) => dayKey(e.t) === dayKey(Date.now()));
+    const streak = computeStreak(new Set(hist.map((e) => dayKey(e.t))));
+    let msg;
+    if (practicedToday) msg = "🌿 You've practised today — lovely. Another round whenever you like.";
+    else if (streak > 1) msg = "🔥 " + streak + "-day streak — a few breaths will keep it going.";
+    else msg = "🌿 Welcome back — ready for a few breaths?";
+    el.nudge.textContent = msg;
+    el.nudge.hidden = false;
+  }
+
   // ---- Init --------------------------------------------------------------
   function init() {
     loadPatterns();
@@ -1127,6 +1163,8 @@
     setLevel(level);
     syncVoiceSettingsVisibility();
     renderStats();
+    renderNudge();
+    if ("vibrate" in navigator && el.vibrateRow) el.vibrateRow.hidden = false;
 
     // Warm up the speech engine on the very first user interaction (iOS).
     ["pointerdown", "touchstart", "click"].forEach((evt) =>
@@ -1140,6 +1178,17 @@
     if (el.deletePatternBtn) el.deletePatternBtn.addEventListener("click", deletePattern);
     if (el.ambientVolume) el.ambientVolume.addEventListener("input", setAmbientVolume);
     if (el.ambientSelect) el.ambientSelect.addEventListener("change", () => { if (isRunning) startAmbient(); });
+    if (el.goalChips) {
+      el.goalChips.querySelectorAll(".goal-chip").forEach((c) =>
+        c.addEventListener("click", () => {
+          if (isRunning) return;
+          const id = c.dataset.program;
+          if (Array.prototype.some.call(el.program.options, (o) => o.value === id)) {
+            el.program.value = id;
+            onProgramChange();
+          }
+        }));
+    }
     el.program.addEventListener("change", onProgramChange);
 
     // Tabs + Meditate
@@ -1169,7 +1218,7 @@
       savePrefs();
     });
     [el.voiceSelect, el.voiceCountdown, el.voiceRate, el.voiceVolume, el.dingToggle,
-     el.toneToggle, el.ambientSelect, el.ambientVolume, el.paceBpm,
+     el.toneToggle, el.vibrateToggle, el.ambientSelect, el.ambientVolume, el.paceBpm,
      el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
       .filter(Boolean)
       .forEach((node) => node.addEventListener("change", savePrefs));
