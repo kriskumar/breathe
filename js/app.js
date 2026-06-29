@@ -480,7 +480,7 @@
     const up = getUserPattern();
     if (up) {
       return {
-        pre: 3,
+        pre: 7,
         cycles: up.cycles,
         durations: {
           inhale: up.durations.inhale,
@@ -494,7 +494,7 @@
     const program = getProgram();
     if (!program) {
       return {
-        pre: 3,
+        pre: 7,
         cycles: clampInt(el.repetitions.value, 1, 200, 18),
         durations: {
           inhale: clampNum(el.inhaleTime.value, 0, 60, 4),
@@ -543,7 +543,7 @@
   function buildSchedule(settings) {
     const steps = [];
     if (settings.pre > 0) {
-      steps.push({ key: "prep", label: "Get Ready", say: "Get ready", seconds: settings.pre, cycle: 0 });
+      steps.push({ key: "prep", label: "Settle in", say: "Find a comfortable seat, or lie down on your back, and settle in.", seconds: settings.pre, cycle: 0 });
     }
     for (let c = 1; c <= settings.cycles; c++) {
       PHASE_META.forEach((meta) => {
@@ -865,8 +865,10 @@
     updateDisplay(remaining);
 
     // Speak the countdown once per integer second, keeping it in lock-step
-    // with the visible timer.
-    if (el.voiceCountdown.checked && remaining > 0 && remaining !== lastSpokenCount) {
+    // with the visible timer. Skip it during "Settle in" so the spoken
+    // settling cue isn't interrupted by numbers.
+    const curKey = schedule[stepIndex] && schedule[stepIndex].key;
+    if (el.voiceCountdown.checked && curKey !== "prep" && remaining > 0 && remaining !== lastSpokenCount) {
       lastSpokenCount = remaining;
       speak(String(remaining));
     }
