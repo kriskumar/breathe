@@ -24,6 +24,7 @@
     completion: document.getElementById("completionMessage"),
     controlBtn: document.getElementById("controlBtn"),
     resetBtn: document.getElementById("resetBtn"),
+    themeToggle: document.getElementById("themeToggle"),
     voiceToggle: document.getElementById("voiceToggle"),
     voiceSettings: document.getElementById("voiceSettings"),
     voiceSelect: document.getElementById("voiceSelect"),
@@ -769,6 +770,7 @@
   // ---- Preferences -------------------------------------------------------
   function savePrefs() {
     const prefs = {
+      theme: themePref,
       program: el.program.value,
       level: level,
       voiceOn: el.voiceToggle.checked,
@@ -799,6 +801,7 @@
     } catch (e) { /* ignore */ }
     if (!prefs) return;
 
+    if (prefs.theme && THEMES.indexOf(prefs.theme) !== -1) themePref = prefs.theme;
     if (prefs.program) el.program.value = prefs.program;
     if (prefs.level) level = prefs.level;
     if (typeof prefs.voiceOn === "boolean") el.voiceToggle.checked = prefs.voiceOn;
@@ -821,6 +824,34 @@
   function syncVoiceSettingsVisibility() {
     el.voiceSettings.classList.toggle("hidden", !el.voiceToggle.checked);
   }
+
+  // ---- Theme (auto / light / dark) --------------------------------------
+  const THEMES = ["auto", "light", "dark"];
+  let themePref = "auto";
+  const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
+
+  function resolvedTheme() {
+    return themePref === "auto" ? (darkMq.matches ? "dark" : "light") : themePref;
+  }
+
+  function applyTheme() {
+    const r = resolvedTheme();
+    document.documentElement.setAttribute("data-theme", r);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", r === "dark" ? "#1a1726" : "#667eea");
+    if (el.themeToggle) {
+      el.themeToggle.textContent = themePref === "auto" ? "🌗" : themePref === "dark" ? "🌙" : "☀️";
+      el.themeToggle.title = "Theme: " + themePref;
+    }
+  }
+
+  function cycleTheme() {
+    themePref = THEMES[(THEMES.indexOf(themePref) + 1) % THEMES.length];
+    applyTheme();
+    savePrefs();
+  }
+
+  darkMq.addEventListener("change", () => { if (themePref === "auto") applyTheme(); });
 
   // ---- Local history & streaks (private, on-device only) -----------------
   const HISTORY_KEY = "breathe.history";
@@ -874,6 +905,7 @@
   function init() {
     populatePrograms();
     loadPrefs();
+    applyTheme();
 
     // Hide voice options entirely if the browser has no speech synthesis.
     if (!ttsSupported) {
@@ -897,6 +929,7 @@
     // Wiring
     el.controlBtn.addEventListener("click", toggleControl);
     el.resetBtn.addEventListener("click", resetSession);
+    if (el.themeToggle) el.themeToggle.addEventListener("click", cycleTheme);
     el.program.addEventListener("change", onProgramChange);
 
     // Tabs + Meditate

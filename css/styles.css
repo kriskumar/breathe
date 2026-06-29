@@ -677,3 +677,116 @@ button {
         transform: none !important;
     }
 }
+
+/* ---- Theme toggle + dark mode ---------------------------------------- */
+.container { position: relative; }
+
+.theme-toggle {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    font-size: 1.15em;
+    line-height: 1;
+    cursor: pointer;
+    text-transform: none;
+}
+
+.theme-toggle:hover {
+    background: rgba(127, 127, 127, 0.12);
+}
+
+/* Dark theme. JS resolves "auto" to light/dark and sets data-theme, so we
+   only need to override the dark case here. */
+[data-theme="dark"] body {
+    background: linear-gradient(135deg, #2b2740 0%, #1a1726 100%);
+}
+
+[data-theme="dark"] .container {
+    background: rgba(34, 30, 52, 0.96);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] h1 { color: #ece9f6; }
+[data-theme="dark"] label { color: #b9b2d0; }
+
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] select {
+    background: #2c2842;
+    border-color: #433d5e;
+    color: #ece9f6;
+}
+
+[data-theme="dark"] input:disabled,
+[data-theme="dark"] select:disabled {
+    background: #262238;
+    color: #6f6889;
+}
+
+[data-theme="dark"] .program-description,
+[data-theme="dark"] .progress { color: #a59ec0; }
+
+[data-theme="dark"] .program-hint {
+    color: #cabfe8;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.14) 0%, rgba(196, 113, 245, 0.16) 100%);
+    border-left-color: #7d6bb0;
+}
+
+[data-theme="dark"] .level-control button,
+[data-theme="dark"] .tab-btn {
+    background: #2c2842;
+    border-color: #433d5e;
+    color: #c3bcd9;
+}
+
+[data-theme="dark"] .options,
+[data-theme="dark"] .info-sections { border-top-color: #3a3552; }
+
+[data-theme="dark"] .slider { background: #4a4463; }
+
+[data-theme="dark"] .reset-btn {
+    background: #2c2842;
+    color: #b3a8e0;
+    border-color: #6f5b9e;
+}
+
+[data-theme="dark"] .stats { color: #b9aee6; }
+[data-theme="dark"] .med-note,
+[data-theme="dark"] .hint,
+[data-theme="dark"] .donate a { color: #8b84a6; }
+
+[data-theme="dark"] .now-playing {
+    background: #241f38;
+    border-color: #433d5e;
+}
+
+[data-theme="dark"] .np-title { color: #cabfe8; }
+[data-theme="dark"] .np-line { color: #a59ec0; }
+[data-theme="dark"] .np-progress { background: #353050; }
+
+[data-theme="dark"] .info {
+    background: rgba(102, 126, 234, 0.07);
+    border-color: #3a3552;
+}
+
+[data-theme="dark"] .info[open] { border-color: #4a4368; }
+[data-theme="dark"] .info summary { color: #c3bcd9; }
+[data-theme="dark"] .info summary:hover { color: #d9d2f0; }
+[data-theme="dark"] .info-body { color: #aaa3c4; }
+[data-theme="dark"] .info-note,
+[data-theme="dark"] .info-disclaimer { color: #8b84a6; }
+[data-theme="dark"] .info-disclaimer { border-top-color: #3a3552; }
+[data-theme="dark"] .info-subhead { color: #cabfe8; }
+[data-theme="dark"] .info-body a {
+    color: #b3a8e0;
+    border-bottom-color: rgba(179, 168, 224, 0.3);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
