@@ -4,11 +4,12 @@
  * Each program defines a base `unit` (seconds), a `pre` preparation phase, and
  * three difficulty levels. A level provides a `ratio` and a `cycle` count.
  *
- * ratio = [inhale, retain, exhale, sustain]
+ * ratio = [inhale, retain, exhale, sustain, inhale2?]
  *   - inhale  : breathe in
  *   - retain  : hold the breath (lungs full)
  *   - exhale  : breathe out
  *   - sustain : hold the breath (lungs empty)
+ *   - inhale2 : optional second "top-up" inhale (the physiological sigh)
  *
  * Actual phase duration in seconds = ratioValue * unit.
  * cycle = number of times the inhale/retain/exhale/sustain sequence repeats.
@@ -28,6 +29,19 @@ const PROGRAMS = [
       beginner: { ratio: [1, 0, 2, 0], cycle: 10 },
       medium:   { ratio: [1, 0, 2, 0], cycle: 10 },
       advanced: { ratio: [1, 0, 2, 0], cycle: 10 },
+    },
+  },
+  {
+    id: "cyclic-sighing",
+    name: "Cyclic Sighing",
+    description: "A double inhale then a long, slow exhale — the physiological sigh shown to lift mood fastest.",
+    hint: "Inhale through the nose to fill the lungs, take a second short sip of air to top them off, then let a long, relaxed exhale flow out through the mouth. Just 5 minutes a day measurably improved mood and lowered anxiety in a 2023 Stanford study — more than box breathing or meditation.",
+    unit: 1,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [2, 0, 5, 0, 1], cycle: 12 },
+      medium:   { ratio: [2, 0, 5, 0, 1], cycle: 24 },
+      advanced: { ratio: [2, 0, 5, 0, 1], cycle: 36 },
     },
   },
   {
@@ -310,6 +324,7 @@ const PROGRAMS = [
 // circle can stay expanded (retain) or contracted (sustain).
 const PHASE_META = [
   { key: "inhale",  ratioIndex: 0, label: "Inhale", say: "Inhale" },
+  { key: "inhale2", ratioIndex: 4, label: "Top up", say: "Sip in" },
   { key: "retain",  ratioIndex: 1, label: "Hold",   say: "Hold" },
   { key: "exhale",  ratioIndex: 2, label: "Exhale", say: "Exhale" },
   { key: "sustain", ratioIndex: 3, label: "Hold",   say: "Hold" },

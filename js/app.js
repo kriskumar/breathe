@@ -15,6 +15,8 @@
     retainTime: document.getElementById("retainTime"),
     exhaleTime: document.getElementById("exhaleTime"),
     sustainTime: document.getElementById("sustainTime"),
+    paceBpm: document.getElementById("paceBpm"),
+    statsLine: document.getElementById("statsLine"),
     circle: document.getElementById("breathingCircle"),
     instruction: document.getElementById("instruction"),
     circleCount: document.getElementById("circleCount"),
@@ -270,6 +272,7 @@
       el.description.textContent = program.description;
       setHint(program.hint || "");
     }
+    document.body.classList.toggle("coherent-mode", !!program && program.id === "coherent");
     savePrefs();
   }
 
@@ -305,16 +308,25 @@
     }
     const lvl = program.levels[level];
     const unit = program.unit;
-    return {
-      pre: program.pre,
-      cycles: lvl.cycle,
-      durations: {
-        inhale: lvl.ratio[0] * unit,
-        retain: lvl.ratio[1] * unit,
-        exhale: lvl.ratio[2] * unit,
-        sustain: lvl.ratio[3] * unit,
-      },
+    const durations = {
+      inhale: lvl.ratio[0] * unit,
+      retain: lvl.ratio[1] * unit,
+      exhale: lvl.ratio[2] * unit,
+      sustain: lvl.ratio[3] * unit,
+      inhale2: (lvl.ratio[4] || 0) * unit,
     };
+    // Coherent breathing: let the user pick the pace in breaths per minute and
+    // split each breath evenly between inhale and exhale.
+    if (program.id === "coherent") {
+      const bpm = clampNum(el.paceBpm && el.paceBpm.value, 3, 10, 6);
+      const half = 60 / bpm / 2;
+      durations.inhale = half;
+      durations.exhale = half;
+      durations.retain = 0;
+      durations.sustain = 0;
+      durations.inhale2 = 0;
+    }
+    return { pre: program.pre, cycles: lvl.cycle, durations: durations };
   }
 
   function clampInt(v, min, max, fallback) {
@@ -621,12 +633,13 @@
   function setCircleScale(key, seconds) {
     let target = el.circle.style.transform;
     if (key === "inhale") target = "scale(1.5)";
+    else if (key === "inhale2") target = "scale(1.65)";   // the top-up sip
     else if (key === "exhale") target = "scale(1)";
     else if (key === "retain") target = "scale(1.5)";
     else if (key === "sustain") target = "scale(1)";
     else if (key === "prep") target = "scale(1)";
 
-    if (key === "inhale" || key === "exhale") {
+    if (key === "inhale" || key === "exhale" || key === "inhale2") {
       el.circle.style.transition = `transform ${seconds}s ease-in-out`;
     } else {
       el.circle.style.transition = "transform 0.3s ease-in-out";
@@ -678,6 +691,13 @@
     el.controlBtn.textContent = "Start";
     setControlsDisabled(false);
     releaseWakeLock();
+    recordSession({
+      t: Date.now(),
+      program: el.program.value,
+      level: level,
+      cycles: totalCycles,
+      sec: schedule.reduce((s, st) => s + st.seconds, 0),
+    });
     showCompletion();
     speak("Session complete");
   }
@@ -715,6 +735,7 @@
     el.retainTime.disabled = disabled;
     el.exhaleTime.disabled = disabled;
     el.sustainTime.disabled = disabled;
+    if (el.paceBpm) el.paceBpm.disabled = disabled;
     el.levelControl.querySelectorAll("button").forEach((b) => (b.disabled = disabled));
   }
 
@@ -756,6 +777,7 @@
       rate: el.voiceRate.value,
       volume: el.voiceVolume.value,
       ding: el.dingToggle.checked,
+      paceBpm: el.paceBpm ? el.paceBpm.value : "6",
       loops: loopPrefs,
       custom: {
         reps: el.repetitions.value,
@@ -784,6 +806,7 @@
     if (prefs.rate) el.voiceRate.value = prefs.rate;
     if (prefs.volume) el.voiceVolume.value = prefs.volume;
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
+    if (prefs.paceBpm && el.paceBpm) el.paceBpm.value = prefs.paceBpm;
     if (prefs.loops) Object.assign(loopPrefs, prefs.loops);
     if (prefs.voiceUri) el.voiceSelect.dataset.pendingUri = prefs.voiceUri;
     if (prefs.custom) {
@@ -797,6 +820,54 @@
 
   function syncVoiceSettingsVisibility() {
     el.voiceSettings.classList.toggle("hidden", !el.voiceToggle.checked);
+  }
+
+  // ---- Local history & streaks (private, on-device only) -----------------
+  const HISTORY_KEY = "breathe.history";
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+    catch (e) { return []; }
+  }
+
+  function recordSession(entry) {
+    const hist = loadHistory();
+    hist.push(entry);
+    if (hist.length > 1000) hist.splice(0, hist.length - 1000);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch (e) { /* ignore */ }
+    renderStats();
+  }
+
+  function dayKey(ts) {
+    const d = new Date(ts);
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+
+  // Count consecutive days ending today (or yesterday if nothing logged today yet).
+  function computeStreak(days) {
+    let streak = 0;
+    const d = new Date();
+    if (!days.has(dayKey(d.getTime()))) d.setDate(d.getDate() - 1);
+    while (days.has(dayKey(d.getTime()))) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function renderStats() {
+    if (!el.statsLine) return;
+    const hist = loadHistory();
+    if (!hist.length) { el.statsLine.hidden = true; return; }
+    const sessions = hist.length;
+    const minutes = Math.round(hist.reduce((s, e) => s + (e.sec || 0), 0) / 60);
+    const streak = computeStreak(new Set(hist.map((e) => dayKey(e.t))));
+    const parts = [];
+    if (streak > 1) parts.push("🔥 " + streak + "-day streak");
+    parts.push(sessions + (sessions === 1 ? " session" : " sessions"));
+    parts.push(minutes + " min");
+    el.statsLine.textContent = parts.join("  ·  ");
+    el.statsLine.hidden = false;
   }
 
   // ---- Init --------------------------------------------------------------
@@ -817,6 +888,7 @@
     onProgramChange();
     setLevel(level);
     syncVoiceSettingsVisibility();
+    renderStats();
 
     // Warm up the speech engine on the very first user interaction (iOS).
     ["pointerdown", "touchstart", "click"].forEach((evt) =>
@@ -854,7 +926,8 @@
       savePrefs();
     });
     [el.voiceSelect, el.voiceCountdown, el.voiceRate, el.voiceVolume, el.dingToggle,
-     el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
+     el.paceBpm, el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
+      .filter(Boolean)
       .forEach((node) => node.addEventListener("change", savePrefs));
 
     // The "see the research ↓" link inside Help opens the (collapsed) Research

@@ -34,6 +34,16 @@
             <p class="program-description" id="programDescription"></p>
             <p class="program-hint" id="programHint" hidden></p>
 
+            <!-- Pace selector, shown only for Coherent breathing -->
+            <div class="coherent-only input-group">
+                <label for="paceBpm">Pace (breaths per minute)</label>
+                <select id="paceBpm">
+                    <option value="6">6 — balanced (5s in / 5s out)</option>
+                    <option value="5">5 — slower (6s in / 6s out)</option>
+                    <option value="4">4 — deepest (7.5s in / 7.5s out)</option>
+                </select>
+            </div>
+
             <div class="input-group">
                 <label>Level</label>
                 <div class="level-control" id="levelControl">
@@ -114,10 +124,10 @@
             </div>
         </div>
 
-        <div class="breathing-circle" id="breathingCircle">
+        <div class="breathing-circle" id="breathingCircle" role="img" aria-label="Breathing pacer">
             <div class="circle-inner">
-                <div class="instruction" id="instruction">Ready</div>
-                <div class="circle-count" id="circleCount">--</div>
+                <div class="instruction" id="instruction" role="status" aria-live="assertive" aria-atomic="true">Ready</div>
+                <div class="circle-count" id="circleCount" aria-hidden="true">--</div>
             </div>
         </div>
 
@@ -128,6 +138,8 @@
             <button class="start-btn" id="controlBtn">Start</button>
             <button class="reset-btn" id="resetBtn">Reset</button>
         </div>
+
+        <p class="stats" id="statsLine" hidden></p>
         </div><!-- /breathePanel -->
 
         <div class="tab-panel" id="meditatePanel" hidden>
