@@ -738,10 +738,27 @@ button {
 }
 
 [data-theme="dark"] .level-control button,
-[data-theme="dark"] .tab-btn {
-    background: #2c2842;
-    border-color: #433d5e;
-    color: #c3bcd9;
+[data-theme="dark"] .tab-btn,
+[data-theme="dark"] .goal-chip {
+    background: #322c4a;
+    border-color: #4a4368;
+    color: #c8c1e0;
+}
+
+/* Keep the selected tab / level highlighted in dark mode — these need higher
+   specificity than the dark overrides above, which would otherwise flatten
+   the active gradient. */
+[data-theme="dark"] .tab-btn.active,
+[data-theme="dark"] .level-control button.active {
+    background: linear-gradient(135deg, #7c83ff 0%, #9a6ad0 100%);
+    border-color: transparent;
+    color: #fff;
+}
+
+[data-theme="dark"] .goal-chip:hover,
+[data-theme="dark"] .level-control button:hover,
+[data-theme="dark"] .tab-btn:hover {
+    border-color: #6f5b9e;
 }
 
 [data-theme="dark"] .options,
