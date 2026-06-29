@@ -17,6 +17,12 @@
     sustainTime: document.getElementById("sustainTime"),
     paceBpm: document.getElementById("paceBpm"),
     statsLine: document.getElementById("statsLine"),
+    patternName: document.getElementById("patternName"),
+    savePatternBtn: document.getElementById("savePatternBtn"),
+    deletePatternBtn: document.getElementById("deletePatternBtn"),
+    ambientSelect: document.getElementById("ambientSelect"),
+    ambientVolume: document.getElementById("ambientVolume"),
+    toneToggle: document.getElementById("toneToggle"),
     circle: document.getElementById("breathingCircle"),
     instruction: document.getElementById("instruction"),
     circleCount: document.getElementById("circleCount"),
@@ -64,19 +70,24 @@
   let currentCycle = 0;
   const loopPrefs = {};   // recording id -> loop on/off, persisted in prefs
 
-  // ---- Audio (ding) ------------------------------------------------------
+  // ---- Audio (ding, ambient, pacing tones) -------------------------------
   let audioContext = null;
+
+  // Lazily create the shared AudioContext (and resume it — iOS starts it
+  // suspended until a user gesture).
+  function ensureAudio() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContext.state === "suspended") audioContext.resume();
+    return audioContext;
+  }
 
   // A soft zen / singing-bowl bell: a fundamental plus a few inharmonic
   // partials, each with its own gentle attack and long exponential decay.
   function playDing() {
     if (!el.dingToggle.checked) return;
-    if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioContext.state === "suspended") audioContext.resume();
-
-    const ctx = audioContext;
+    const ctx = ensureAudio();
     const now = ctx.currentTime;
 
     const master = ctx.createGain();
@@ -104,6 +115,104 @@
       osc.start(now);
       osc.stop(now + p.decay + 0.1);
     });
+  }
+
+  // ---- Pacing tones: a short cue at each phase, as a non-verbal option ----
+  // inhale rises, exhale falls, holds are a soft mid note.
+  function playPhaseTone(key) {
+    if (!el.toneToggle || !el.toneToggle.checked) return;
+    if (key === "prep") return;
+    const ctx = ensureAudio();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    let f0 = 440, f1 = 440;
+    if (key === "inhale" || key === "inhale2") { f0 = 392; f1 = 587; }      // rising
+    else if (key === "exhale") { f0 = 523; f1 = 330; }                       // falling
+    else { f0 = 440; f1 = 440; }                                             // hold: steady
+    osc.frequency.setValueAtTime(f0, now);
+    osc.frequency.linearRampToValueAtTime(f1, now + 0.35);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.5);
+  }
+
+  // ---- Ambient soundscape (synthesised, no asset files) ------------------
+  // A looping noise/drone bed that plays under a session. Built with Web Audio
+  // so it works offline and on iOS (alongside speechSynthesis).
+  let ambientNodes = null;
+
+  function makeNoiseBuffer(ctx, kind) {
+    const len = ctx.sampleRate * 2;
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const white = Math.random() * 2 - 1;
+      if (kind === "brown") { last = (last + 0.02 * white) / 1.02; d[i] = last * 3.5; }
+      else { d[i] = white; }   // white (for rain)
+    }
+    return buf;
+  }
+
+  function startAmbient() {
+    stopAmbient();
+    const kind = el.ambientSelect ? el.ambientSelect.value : "none";
+    if (!kind || kind === "none") return;
+    const ctx = ensureAudio();
+    const out = ctx.createGain();
+    out.gain.value = (el.ambientVolume ? parseFloat(el.ambientVolume.value) : 0.5) * 0.6;
+    out.connect(ctx.destination);
+    const nodes = { out: out, list: [] };
+
+    if (kind === "drone") {
+      [196, 261.63, 392].forEach((f, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = f;
+        g.gain.value = i === 0 ? 0.5 : 0.22;
+        o.connect(g); g.connect(out); o.start();
+        nodes.list.push(o);
+      });
+    } else {
+      // ocean = brown noise + slow filter swell; rain = brighter white noise
+      const src = ctx.createBufferSource();
+      src.buffer = makeNoiseBuffer(ctx, kind === "rain" ? "white" : "brown");
+      src.loop = true;
+      const filt = ctx.createBiquadFilter();
+      filt.type = "lowpass";
+      filt.frequency.value = kind === "rain" ? 1800 : 520;
+      src.connect(filt); filt.connect(out); src.start();
+      nodes.list.push(src);
+      if (kind === "ocean") {
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+        lfo.frequency.value = 0.1;          // ~10s swell
+        lfoGain.gain.value = 220;
+        lfo.connect(lfoGain); lfoGain.connect(filt.frequency); lfo.start();
+        nodes.list.push(lfo);
+      }
+    }
+    ambientNodes = nodes;
+  }
+
+  function stopAmbient() {
+    if (!ambientNodes) return;
+    ambientNodes.list.forEach((n) => { try { n.stop(); } catch (e) { /* osc/source */ } });
+    try { ambientNodes.out.disconnect(); } catch (e) { /* ignore */ }
+    ambientNodes = null;
+  }
+
+  function setAmbientVolume() {
+    if (ambientNodes && el.ambientVolume) {
+      ambientNodes.out.gain.value = parseFloat(el.ambientVolume.value) * 0.6;
+    }
   }
 
   // ---- Text-to-speech ----------------------------------------------------
@@ -244,7 +353,26 @@
   }
 
   // ---- Program / level selection ----------------------------------------
+  // ---- Saved custom patterns (on-device) ---------------------------------
+  const PATTERNS_KEY = "breathe.patterns";
+  let userPatterns = [];
+
+  function loadPatterns() {
+    try { userPatterns = JSON.parse(localStorage.getItem(PATTERNS_KEY)) || []; }
+    catch (e) { userPatterns = []; }
+  }
+  function persistPatterns() {
+    try { localStorage.setItem(PATTERNS_KEY, JSON.stringify(userPatterns)); } catch (e) { /* ignore */ }
+  }
+  function getUserPattern(val) {
+    const v = val == null ? el.program.value : val;
+    if (typeof v !== "string" || v.indexOf("user:") !== 0) return null;
+    return userPatterns.find((p) => p.id === v.slice(5)) || null;
+  }
+
   function populatePrograms() {
+    const keep = el.program.value;
+    el.program.innerHTML = "";
     PROGRAMS.forEach((p) => {
       const opt = document.createElement("option");
       opt.value = p.id;
@@ -255,25 +383,76 @@
     custom.value = "custom";
     custom.textContent = "Custom";
     el.program.appendChild(custom);
+    if (userPatterns.length) {
+      const og = document.createElement("optgroup");
+      og.label = "My Patterns";
+      userPatterns.forEach((p) => {
+        const o = document.createElement("option");
+        o.value = "user:" + p.id;
+        o.textContent = p.name;
+        og.appendChild(o);
+      });
+      el.program.appendChild(og);
+    }
+    if (keep) el.program.value = keep;
   }
 
   function getProgram() {
     return PROGRAMS.find((p) => p.id === el.program.value) || null;
   }
 
+  function savePattern() {
+    const name = (el.patternName.value || "").trim() || "My pattern";
+    const id = "p" + Date.now();
+    userPatterns.push({
+      id: id,
+      name: name,
+      durations: {
+        inhale: clampNum(el.inhaleTime.value, 0, 60, 4),
+        retain: clampNum(el.retainTime.value, 0, 60, 0),
+        exhale: clampNum(el.exhaleTime.value, 0, 60, 8),
+        sustain: clampNum(el.sustainTime.value, 0, 60, 0),
+      },
+      cycles: clampInt(el.repetitions.value, 1, 200, 18),
+    });
+    persistPatterns();
+    el.patternName.value = "";
+    populatePrograms();
+    el.program.value = "user:" + id;
+    onProgramChange();
+  }
+
+  function deletePattern() {
+    const up = getUserPattern();
+    if (!up) return;
+    userPatterns = userPatterns.filter((p) => p.id !== up.id);
+    persistPatterns();
+    populatePrograms();
+    el.program.value = "custom";
+    onProgramChange();
+  }
+
   function onProgramChange() {
+    const up = getUserPattern();
     const program = getProgram();
-    if (!program) {
-      // Custom
-      document.body.classList.add("custom-mode");
-      el.description.textContent = "Set your own inhale, hold, exhale and sustain times.";
+    const isCustom = !program && !up && el.program.value === "custom";
+
+    document.body.classList.toggle("custom-mode", isCustom);
+    document.body.classList.toggle("pattern-mode", !!up);
+    document.body.classList.toggle("coherent-mode", !!program && program.id === "coherent");
+
+    if (up) {
+      const d = up.durations;
+      el.description.textContent =
+        `Saved pattern · in ${d.inhale}s · hold ${d.retain}s · out ${d.exhale}s · sustain ${d.sustain}s · ${up.cycles} cycles`;
       setHint("");
-    } else {
-      document.body.classList.remove("custom-mode");
+    } else if (isCustom) {
+      el.description.textContent = "Set your own inhale, hold, exhale and sustain times, then save the pattern to reuse it.";
+      setHint("");
+    } else if (program) {
       el.description.textContent = program.description;
       setHint(program.hint || "");
     }
-    document.body.classList.toggle("coherent-mode", !!program && program.id === "coherent");
     savePrefs();
   }
 
@@ -294,6 +473,20 @@
 
   // Resolve the four phase durations (seconds) and cycle count for the run.
   function resolveSettings() {
+    const up = getUserPattern();
+    if (up) {
+      return {
+        pre: 3,
+        cycles: up.cycles,
+        durations: {
+          inhale: up.durations.inhale,
+          retain: up.durations.retain,
+          exhale: up.durations.exhale,
+          sustain: up.durations.sustain,
+          inhale2: 0,
+        },
+      };
+    }
     const program = getProgram();
     if (!program) {
       return {
@@ -391,6 +584,7 @@
     el.controlBtn.textContent = "Stop";
     setControlsDisabled(true);
     acquireWakeLock();
+    startAmbient();
 
     // A user gesture (the Start click) is required to unlock audio on mobile;
     // it's also when iOS first exposes the voice list, so refresh it here.
@@ -625,6 +819,7 @@
     // fall behind the on-screen timer, then announce this phase by name.
     if (ttsSupported) window.speechSynthesis.cancel();
     speak(step.say);
+    playPhaseTone(step.key);
 
     updateDisplay(Math.ceil(step.seconds));
   }
@@ -688,6 +883,7 @@
 
   function completeSession() {
     stopTimers();
+    stopAmbient();
     isRunning = false;
     el.controlBtn.textContent = "Start";
     setControlsDisabled(false);
@@ -714,6 +910,7 @@
 
   function stopSession() {
     stopTimers();
+    stopAmbient();
     releaseWakeLock();
     cancelSpeech();
     isRunning = false;
@@ -736,7 +933,8 @@
     el.retainTime.disabled = disabled;
     el.exhaleTime.disabled = disabled;
     el.sustainTime.disabled = disabled;
-    if (el.paceBpm) el.paceBpm.disabled = disabled;
+    [el.paceBpm, el.ambientSelect, el.toneToggle, el.patternName, el.savePatternBtn, el.deletePatternBtn]
+      .forEach((n) => { if (n) n.disabled = disabled; });
     el.levelControl.querySelectorAll("button").forEach((b) => (b.disabled = disabled));
   }
 
@@ -749,6 +947,7 @@
   // without reloading the page.
   function resetSession() {
     stopTimers();
+    stopAmbient();
     releaseWakeLock();
     cancelSpeech();
     isRunning = false;
@@ -779,6 +978,9 @@
       rate: el.voiceRate.value,
       volume: el.voiceVolume.value,
       ding: el.dingToggle.checked,
+      tone: el.toneToggle ? el.toneToggle.checked : false,
+      ambient: el.ambientSelect ? el.ambientSelect.value : "none",
+      ambientVol: el.ambientVolume ? el.ambientVolume.value : "0.5",
       paceBpm: el.paceBpm ? el.paceBpm.value : "6",
       loops: loopPrefs,
       custom: {
@@ -809,6 +1011,9 @@
     if (prefs.rate) el.voiceRate.value = prefs.rate;
     if (prefs.volume) el.voiceVolume.value = prefs.volume;
     if (typeof prefs.ding === "boolean") el.dingToggle.checked = prefs.ding;
+    if (typeof prefs.tone === "boolean" && el.toneToggle) el.toneToggle.checked = prefs.tone;
+    if (prefs.ambient && el.ambientSelect) el.ambientSelect.value = prefs.ambient;
+    if (prefs.ambientVol && el.ambientVolume) el.ambientVolume.value = prefs.ambientVol;
     if (prefs.paceBpm && el.paceBpm) el.paceBpm.value = prefs.paceBpm;
     if (prefs.loops) Object.assign(loopPrefs, prefs.loops);
     if (prefs.voiceUri) el.voiceSelect.dataset.pendingUri = prefs.voiceUri;
@@ -903,6 +1108,7 @@
 
   // ---- Init --------------------------------------------------------------
   function init() {
+    loadPatterns();
     populatePrograms();
     loadPrefs();
     applyTheme();
@@ -930,6 +1136,10 @@
     el.controlBtn.addEventListener("click", toggleControl);
     el.resetBtn.addEventListener("click", resetSession);
     if (el.themeToggle) el.themeToggle.addEventListener("click", cycleTheme);
+    if (el.savePatternBtn) el.savePatternBtn.addEventListener("click", savePattern);
+    if (el.deletePatternBtn) el.deletePatternBtn.addEventListener("click", deletePattern);
+    if (el.ambientVolume) el.ambientVolume.addEventListener("input", setAmbientVolume);
+    if (el.ambientSelect) el.ambientSelect.addEventListener("change", () => { if (isRunning) startAmbient(); });
     el.program.addEventListener("change", onProgramChange);
 
     // Tabs + Meditate
@@ -959,7 +1169,8 @@
       savePrefs();
     });
     [el.voiceSelect, el.voiceCountdown, el.voiceRate, el.voiceVolume, el.dingToggle,
-     el.paceBpm, el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
+     el.toneToggle, el.ambientSelect, el.ambientVolume, el.paceBpm,
+     el.repetitions, el.inhaleTime, el.retainTime, el.exhaleTime, el.sustainTime]
       .filter(Boolean)
       .forEach((node) => node.addEventListener("change", savePrefs));
 

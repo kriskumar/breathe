@@ -79,6 +79,18 @@
                     <input type="number" id="sustainTime" min="0" max="60" step="0.5" value="0">
                 </div>
             </div>
+            <!-- Save the current custom timings as a reusable named pattern -->
+            <div class="custom-only input-group">
+                <label for="patternName">Save this pattern</label>
+                <div class="save-row">
+                    <input type="text" id="patternName" placeholder="Name (e.g. My 4-7-8)" maxlength="40">
+                    <button type="button" class="reset-btn" id="savePatternBtn">Save</button>
+                </div>
+            </div>
+            <!-- Delete control shown only when a saved pattern is selected -->
+            <div class="pattern-only input-group">
+                <button type="button" class="reset-btn" id="deletePatternBtn">Delete this pattern</button>
+            </div>
         </div>
 
         <div class="options">
@@ -122,6 +134,28 @@
                     <input type="checkbox" id="dingToggle" checked>
                     <span class="slider"></span>
                 </label>
+            </div>
+
+            <div class="toggle-row">
+                <label for="toneToggle">🎵 Pacing tones</label>
+                <label class="switch">
+                    <input type="checkbox" id="toneToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="input-group">
+                <label for="ambientSelect">🌊 Ambient sound</label>
+                <select id="ambientSelect">
+                    <option value="none">Off</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="rain">Rain</option>
+                    <option value="drone">Drone</option>
+                </select>
+            </div>
+            <div class="range-row" id="ambientVolumeRow">
+                <label for="ambientVolume">Volume</label>
+                <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
             </div>
         </div>
 
