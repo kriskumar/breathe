@@ -26,7 +26,18 @@
         </div>
 
         <div class="tab-panel" id="breathePanel">
+        <p class="nudge" id="nudge" hidden></p>
         <div class="settings">
+            <div class="input-group">
+                <label>What do you need?</label>
+                <div class="goal-chips" id="goalChips">
+                    <button type="button" class="goal-chip" data-program="cyclic-sighing">😌 Calm</button>
+                    <button type="button" class="goal-chip" data-program="relax2">😴 Sleep</button>
+                    <button type="button" class="goal-chip" data-program="box">🎯 Focus</button>
+                    <button type="button" class="goal-chip" data-program="energizing">⚡ Energy</button>
+                </div>
+            </div>
+
             <div class="input-group">
                 <label for="program">Pranayama</label>
                 <select id="program"></select>
@@ -140,6 +151,14 @@
                 <label for="toneToggle">🎵 Pacing tones</label>
                 <label class="switch">
                     <input type="checkbox" id="toneToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-row" id="vibrateRow" hidden>
+                <label for="vibrateToggle">📳 Vibration cues</label>
+                <label class="switch">
+                    <input type="checkbox" id="vibrateToggle">
                     <span class="slider"></span>
                 </label>
             </div>
