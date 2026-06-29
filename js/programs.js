@@ -26,9 +26,9 @@ const PROGRAMS = [
     unit: 3,
     pre: 3,
     levels: {
-      beginner: { ratio: [1, 0, 2, 0], cycle: 10 },
-      medium:   { ratio: [1, 0, 2, 0], cycle: 10 },
-      advanced: { ratio: [1, 0, 2, 0], cycle: 10 },
+      beginner: { ratio: [1, 0, 2, 0], cycle: 8 },
+      medium:   { ratio: [1, 0, 2.5, 0], cycle: 12 },
+      advanced: { ratio: [1, 0, 3, 0], cycle: 16 },
     },
   },
   {
