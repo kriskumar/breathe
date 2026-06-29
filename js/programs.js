@@ -4,11 +4,12 @@
  * Each program defines a base `unit` (seconds), a `pre` preparation phase, and
  * three difficulty levels. A level provides a `ratio` and a `cycle` count.
  *
- * ratio = [inhale, retain, exhale, sustain]
+ * ratio = [inhale, retain, exhale, sustain, inhale2?]
  *   - inhale  : breathe in
  *   - retain  : hold the breath (lungs full)
  *   - exhale  : breathe out
  *   - sustain : hold the breath (lungs empty)
+ *   - inhale2 : optional second "top-up" inhale (the physiological sigh)
  *
  * Actual phase duration in seconds = ratioValue * unit.
  * cycle = number of times the inhale/retain/exhale/sustain sequence repeats.
@@ -28,6 +29,19 @@ const PROGRAMS = [
       beginner: { ratio: [1, 0, 2, 0], cycle: 10 },
       medium:   { ratio: [1, 0, 2, 0], cycle: 10 },
       advanced: { ratio: [1, 0, 2, 0], cycle: 10 },
+    },
+  },
+  {
+    id: "cyclic-sighing",
+    name: "Cyclic Sighing",
+    description: "A double inhale then a long, slow exhale — the physiological sigh shown to lift mood fastest.",
+    hint: "Inhale through the nose to fill the lungs, take a second short sip of air to top them off, then let a long, relaxed exhale flow out through the mouth. Just 5 minutes a day measurably improved mood and lowered anxiety in a 2023 Stanford study — more than box breathing or meditation.",
+    unit: 1,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [2, 0, 5, 0, 1], cycle: 12 },
+      medium:   { ratio: [2, 0, 5, 0, 1], cycle: 24 },
+      advanced: { ratio: [2, 0, 5, 0, 1], cycle: 36 },
     },
   },
   {
@@ -265,6 +279,71 @@ const PROGRAMS = [
     },
   },
   {
+    id: "nadi-shodhana",
+    name: "Nadi Shodhana (Alternate Nostril)",
+    description: "Alternate-nostril breathing to balance and calm the nervous system.",
+    hint: "With the right hand, use the thumb and ring finger to close one nostril at a time. Inhale through the left nostril; close it and exhale through the right. Inhale through the right; close it and exhale through the left — that is one round. Keep the breath smooth, slow and silent.",
+    unit: 1,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [4, 0, 4, 0], cycle: 9 },
+      medium:   { ratio: [4, 4, 4, 0], cycle: 9 },
+      advanced: { ratio: [5, 5, 5, 0], cycle: 9 },
+    },
+  },
+  {
+    id: "ujjayi",
+    name: "Ujjayi (Ocean Breath)",
+    description: "Slow, even breathing with a soft ocean-like sound to steady the mind.",
+    hint: "Breathe only through the nose. Slightly constrict the back of the throat so the breath makes a quiet ocean-like \"haaa\" sound on both the in-breath and the out-breath. Keep it smooth, even and unforced, as if gently fogging a mirror with the mouth closed.",
+    unit: 1,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [5, 0, 5, 0], cycle: 15 },
+      medium:   { ratio: [6, 0, 6, 0], cycle: 18 },
+      advanced: { ratio: [6, 2, 8, 0], cycle: 18 },
+    },
+  },
+  {
+    id: "dirga",
+    name: "Dirga (Three-Part Breath)",
+    description: "Deep three-part breathing that fills the belly, ribs and chest to ground and relax.",
+    hint: "Inhale in three smooth, continuous stages — first letting the belly rise, then the ribs widen, then the upper chest fill. Exhale in reverse: the chest empties, then the ribs, then the belly draws in last. Keep the whole breath slow and unbroken.",
+    unit: 1,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [6, 0, 6, 0], cycle: 10 },
+      medium:   { ratio: [7, 0, 7, 0], cycle: 12 },
+      advanced: { ratio: [8, 0, 8, 0], cycle: 14 },
+    },
+  },
+  {
+    id: "sitali",
+    name: "Sitali (Cooling Breath)",
+    description: "A cooling inhale through the tongue to ease heat, agitation and stress.",
+    hint: "Curl the sides of your tongue into a tube and inhale slowly through it (if you can't curl your tongue, purse your lips instead) — the incoming air feels cool. Then close the mouth and exhale gently through the nose. Cooling and calming when you feel hot or irritated.",
+    unit: 1,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [4, 0, 6, 0], cycle: 10 },
+      medium:   { ratio: [4, 2, 6, 0], cycle: 12 },
+      advanced: { ratio: [5, 2, 7, 0], cycle: 12 },
+    },
+  },
+  {
+    id: "triangle",
+    name: "Triangle Breathing",
+    description: "Equal inhale, hold and exhale — a simpler cousin of box breathing for steady focus.",
+    hint: "Three equal sides: breathe in, hold the breath gently in, then breathe out — each for the same count, with no pause at the bottom. Breathe through the nose and keep each side smooth and even.",
+    unit: 1,
+    pre: 3,
+    levels: {
+      beginner: { ratio: [4, 4, 4, 0], cycle: 10 },
+      medium:   { ratio: [5, 5, 5, 0], cycle: 12 },
+      advanced: { ratio: [6, 6, 6, 0], cycle: 14 },
+    },
+  },
+  {
     id: "fire",
     name: "Fire",
     description: "A long sustain after the exhale to stoke inner heat.",
@@ -310,6 +389,7 @@ const PROGRAMS = [
 // circle can stay expanded (retain) or contracted (sustain).
 const PHASE_META = [
   { key: "inhale",  ratioIndex: 0, label: "Inhale", say: "Inhale" },
+  { key: "inhale2", ratioIndex: 4, label: "Top up", say: "Sip in" },
   { key: "retain",  ratioIndex: 1, label: "Hold",   say: "Hold" },
   { key: "exhale",  ratioIndex: 2, label: "Exhale", say: "Exhale" },
   { key: "sustain", ratioIndex: 3, label: "Hold",   say: "Hold" },
