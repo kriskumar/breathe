@@ -251,6 +251,24 @@
     return el.voiceSelect.dataset.pendingUri || "";
   }
 
+  // Sensible per-platform default when the user hasn't picked a voice yet:
+  // Samantha (en-US) on iPhone/iPad, Google UK English Male on Windows desktop.
+  // Returns "" when no match is installed, leaving the top-ranked voice in place.
+  function defaultVoiceUri() {
+    const ua = navigator.userAgent || "";
+    const isIOS = /iP(hone|od|ad)/.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isWindows = /Windows/.test(ua);
+    let match = null;
+    if (isIOS) {
+      match = voices.find((v) => /^Samantha\b/i.test(v.name) && /^en[-_]US/i.test(v.lang)) ||
+              voices.find((v) => /^Samantha\b/i.test(v.name));
+    } else if (isWindows) {
+      match = voices.find((v) => /Google UK English Male/i.test(v.name));
+    }
+    return match ? match.voiceURI : "";
+  }
+
   function selectVoiceByUri(uri) {
     if (!uri) return;
     const i = voices.findIndex((v) => v.voiceURI === uri);
@@ -291,7 +309,7 @@
     addVoiceOptions(grouped ? languageLabel(navigator.language || "en") : "", preferred);
     addVoiceOptions(grouped ? "Other languages" : "", rest);
 
-    selectVoiceByUri(wantUri);
+    selectVoiceByUri(wantUri || defaultVoiceUri());
   }
 
   // Append a set of voices, optionally inside a labelled <optgroup>. Option

@@ -215,6 +215,15 @@ body.coherent-mode .coherent-only {
     display: none;
 }
 
+.voice-hint {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.72em;
+    font-weight: 400;
+    color: #999;
+    line-height: 1.3;
+}
+
 .range-row {
     display: flex;
     align-items: center;
@@ -730,6 +739,8 @@ button {
 
 [data-theme="dark"] .program-description,
 [data-theme="dark"] .progress { color: #a59ec0; }
+
+[data-theme="dark"] .voice-hint { color: #8a83a0; }
 
 [data-theme="dark"] .program-hint {
     color: #cabfe8;
