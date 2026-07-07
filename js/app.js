@@ -360,12 +360,12 @@
     refreshVoices();
   }
 
-  function speak(text) {
+  function speak(text, rateOverride) {
     if (!ttsSupported || !el.voiceToggle.checked || !text) return;
     const u = new SpeechSynthesisUtterance(text);
     const chosen = voices[el.voiceSelect.value];
     if (chosen) u.voice = chosen;
-    u.rate = parseFloat(el.voiceRate.value);
+    u.rate = rateOverride != null ? rateOverride : parseFloat(el.voiceRate.value);
     u.volume = parseFloat(el.voiceVolume.value);
     window.speechSynthesis.speak(u);
   }
@@ -929,16 +929,25 @@
       cycles: totalCycles,
       sec: schedule.reduce((s, st) => s + st.seconds, 0),
     });
-    showCompletion();
-    speak("Session complete");
+    const msg = closingMessage();
+    showCompletion(msg);
+    // Spoken slowly and gently as a calm close to the practice.
+    speak(msg, 0.8);
   }
 
-  function showCompletion() {
+  // A gentle, practice-specific closing line (falls back for Custom / saved).
+  function closingMessage() {
+    const map = (typeof CLOSINGS !== "undefined") ? CLOSINGS : null;
+    return (map && map[el.program.value]) || (map && map._default) || "Take a gentle moment. Notice how you feel, and rest here as long as you like.";
+  }
+
+  function showCompletion(msg) {
     el.circle.className = "breathing-circle";
     el.circle.style.transform = "scale(1)";
     el.instruction.textContent = "Done";
     el.circleCount.textContent = "✓";
     el.progress.textContent = `Cycle ${totalCycles} / ${totalCycles}`;
+    el.completion.textContent = msg || "";
     el.completion.classList.add("show");
   }
 

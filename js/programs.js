@@ -394,3 +394,37 @@ const PHASE_META = [
   { key: "exhale",  ratioIndex: 2, label: "Exhale", say: "Exhale" },
   { key: "sustain", ratioIndex: 3, label: "Hold",   say: "Hold" },
 ];
+
+// Gentle, practice-specific closing lines shown and spoken (slowly) at the end
+// of a session. Keyed by program id; "_default" covers Custom and saved patterns.
+const CLOSINGS = {
+  "simple-mind": "Rest here a moment. The mind is quieter now — carry this ease with you.",
+  "cyclic-sighing": "Feel the calm settle through you. Let that long, soft exhale stay with you a while.",
+  "clear-mind": "Notice the space you've made. Let your thoughts drift by like passing clouds.",
+  "relax1": "You are softer now. Let the body stay heavy and at ease a moment longer.",
+  "relax2": "Let the stillness deepen. Whenever you're ready, drift gently back — or into sleep.",
+  "relax3": "Feel how slow and easy the breath has become. Rest here in this calm.",
+  "calming1": "The waters are still now. Sit quietly and let the calm hold you.",
+  "calming2": "Let the last of the tension go. You are steady, settled, and at peace.",
+  "calming3": "Notice the quiet that has arrived. Let each breath keep it soft and slow.",
+  "power": "Feel the steady energy you've gathered. Carry it with you, calm and sure.",
+  "harmony": "Everything is in balance now. Rest a moment in this even, gentle rhythm.",
+  "anti-stress": "The tension has loosened its grip. Let your shoulders soften, and simply be.",
+  "anti-appetite": "Rest here a moment. You are calm, centred, and enough, just as you are.",
+  "cigarette-replace": "That craving has passed. Notice how calm and capable you are right now.",
+  "decision-making": "Your mind is clearer now. Let the answer come gently, in its own time.",
+  "balancing": "Left and right, in and out — all in balance. Rest in this even calm.",
+  "energizing": "Feel the fresh, bright energy in you. Step forward gently, awake and alive.",
+  "box": "Four steady sides, one calm centre. Carry this composure into whatever comes next.",
+  "coherent": "Heart and breath are moving as one. Rest here in this quiet, coherent calm.",
+  "bhramari": "Feel the gentle hum still resting within you. Let the mind stay soft and quiet.",
+  "nadi-shodhana": "Both channels are clear and balanced now. Sit a moment in this settled calm.",
+  "ujjayi": "The ocean of the breath grows still. Rest here, steady and serene.",
+  "dirga": "The whole body has breathed, full and slow. Rest now, grounded and at ease.",
+  "sitali": "Feel the cool, quiet calm you've made. Let it soothe you a little longer.",
+  "triangle": "Steady and even, you've found your focus. Rest a moment in the calm.",
+  "fire": "The inner warmth is kindled. Let it settle into a soft, steady glow.",
+  "retention": "You met the stillness and stayed. Rest now in that quiet strength.",
+  "swooning": "Float here a moment in the softness. Let everything be light and easy.",
+  "_default": "Take a gentle moment. Notice how you feel, and rest here as long as you like.",
+};
