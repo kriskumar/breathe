@@ -301,16 +301,23 @@ body.coherent-mode .coherent-only {
 
 .completion-message {
     text-align: center;
-    font-size: 1.5em;
-    color: #27ae60;
-    margin: 20px 0;
-    font-weight: 600;
+    font-size: 1.05em;
+    color: #5b6b8c;
+    margin: 18px auto 4px;
+    max-width: 30em;
+    font-weight: 500;
+    font-style: italic;
+    line-height: 1.55;
     display: none;
 }
 
 .completion-message.show {
     display: block;
-    animation: fadeIn 0.5s;
+    animation: fadeIn 0.8s;
+}
+
+[data-theme="dark"] .completion-message {
+    color: #b3aad0;
 }
 
 @keyframes fadeIn {
