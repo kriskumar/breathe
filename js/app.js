@@ -632,9 +632,13 @@
 
   // ---- Tabs --------------------------------------------------------------
   function switchTab(name) {
-    // Leaving a tab stops whatever it was doing.
-    if (isRunning) stopSession();
-    stopMeditation();
+    // Breathe and Meditate are practices; Settings and Heart Rate are ancillary
+    // (adjust cues / watch your pulse) and must NOT interrupt a session in
+    // progress. So a running practice is stopped only when the user switches to
+    // the *other* practice — not when they pop into Settings or Heart Rate, and
+    // not when they return to their own practice tab.
+    if (name === "meditate" && isRunning) stopSession();
+    if (name === "breathe") stopMeditation();
     if (name !== "heart" && window.HeartRate) window.HeartRate.onLeaveTab();
 
     el.tabButtons.forEach((b) => {
