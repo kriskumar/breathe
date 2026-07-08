@@ -650,15 +650,16 @@
 
   // ---- In-session heart-rate badge ---------------------------------------
   // Mirrors the live reading from the Heart Rate tab onto the Breathe and
-  // Meditate tabs, but only while a monitor is actually connected.
+  // Meditate tabs. Shown only once a connected monitor is actually streaming
+  // a reading — never on a mere connection attempt or a dropped link, so its
+  // presence always means a real, working number.
   function updateHrBadges(snap) {
-    const show = !!(snap && snap.connected);
-    const text = snap && snap.bpm != null ? String(snap.bpm) : "--";
+    const show = !!(snap && snap.connected && snap.bpm != null);
     [[el.hrBadgeBreathe, el.hrBadgeBreatheVal], [el.hrBadgeMeditate, el.hrBadgeMeditateVal]]
       .forEach(([badge, val]) => {
         if (!badge) return;
         badge.hidden = !show;
-        if (val) val.textContent = text;
+        if (show && val) val.textContent = String(snap.bpm);
       });
   }
 
