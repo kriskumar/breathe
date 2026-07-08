@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VX1N7XT70K"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-VX1N7XT70K');
+    </script>
+    <title>Heart Rate — connecting a sensor · Soham</title>
+    <link rel="stylesheet" href="css/docs.css">
+</head>
+<body>
+    <article class="doc">
+        <a class="back" href="index.html">← Back to Soham</a>
+<h1>Heart Rate — connecting a sensor</h1>
+<p>The <strong>❤️ Heart Rate</strong> tab reads live heart rate from a Bluetooth
+sensor using
+<a href="https://developer.mozilla.org/docs/Web/API/Web_Bluetooth_API" target="_blank" rel="noopener">Web Bluetooth</a>.</p>
+
+<h2>Where it works</h2>
+<p>Web Bluetooth is only available in <strong>Chromium browsers over HTTPS</strong>:</p>
+<table>
+    <thead>
+        <tr><th>Platform</th><th>Works?</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Chrome / Edge on desktop (Win, macOS, Linux, ChromeOS)</td><td>✅</td></tr>
+        <tr><td>Chrome on Android</td><td>✅</td></tr>
+        <tr><td>Safari (iPhone / iPad / macOS)</td><td>❌ not supported</td></tr>
+        <tr><td>Firefox</td><td>❌ not supported</td></tr>
+    </tbody>
+</table>
+<p>On unsupported browsers the tab shows a short explanation instead of the
+controls.</p>
+
+<h2>Two modes</h2>
+
+<h3>1. Standard HR monitor (plug &amp; play)</h3>
+<p>Any device that implements the Bluetooth SIG <strong>Heart Rate Service</strong>
+(<code>0x180D</code>): chest straps (Polar H10/H9, Wahoo Tickr, Garmin
+HRM-Dual/Pro), and many rings and watches. Pick <strong>Standard HR monitor</strong>,
+press <strong>Connect</strong>, choose the device in the browser prompt. No key,
+no setup.</p>
+<p>You get live BPM, a rough HRV (RMSSD) reading when the sensor reports
+RR-intervals, sensor-contact quality, and battery level where exposed.</p>
+
+<h3>2. Amazfit / Mi Band (needs an auth key)</h3>
+<p>The <strong>Amazfit Band 5</strong> (a Huami device, essentially a Mi Band 5)
+does <strong>not</strong> stream heart rate to a browser out of the box. It
+speaks a proprietary protocol and requires an encrypted <strong>AES
+challenge/response handshake</strong> using a <strong>device-specific auth
+key</strong> (32 hex characters) before it will send anything. This is the same
+key
+<a href="https://gadgetbridge.org/gadgets/wearables/amazfit/#device__amazfit_band_5" target="_blank" rel="noopener">Gadgetbridge</a>
+asks for.</p>
+<p>Once you have the key, pick <strong>Amazfit / Mi Band</strong>, paste the
+32-hex-character key, and press <strong>Connect</strong>.</p>
+<blockquote>
+    <p><strong>Important:</strong> a band can only be connected to one app at a
+    time. The Band 5 must be <strong>un-paired / removed from the Zepp (or Mi Fit
+    / Zepp Life) app</strong> on your phone before the browser can connect to it.
+    Re-pairing to Zepp later can rotate the key.</p>
+</blockquote>
+
+<h2>How to get the auth key</h2>
+<p>The key is created the first time the band pairs with the official vendor app.
+You extract it once, then reuse it.</p>
+
+<h3>Option A — <code>huami-token</code> (no root)</h3>
+<p>The community tool
+<a href="https://codeberg.org/argrento/huami-token" target="_blank" rel="noopener"><code>huami-token</code></a>
+logs into your Amazfit/Zepp/Mi Fit <strong>account</strong> and prints the auth
+keys for the devices on it.</p>
+<ol>
+    <li>Pair the Band 5 with the <strong>Zepp</strong> (or Zepp Life / Mi Fit) app
+    as normal, so the account holds a key for it.</li>
+    <li>Run <code>huami-token</code> with your account credentials (see its
+    README; supports Amazfit and Xiaomi/Mi accounts, email or region login).</li>
+    <li>It prints an <strong>auth key</strong> like <code>0x</code> followed by 32
+    hex characters. Copy the 32 hex characters (the tool may show them with or
+    without the <code>0x</code> — either is fine; the app strips <code>0x</code>).</li>
+</ol>
+
+<h3>Option B — Android backup / logcat (rooted or debuggable)</h3>
+<p>If you use <strong>Gadgetbridge</strong>, it stores/needs the same key. On
+rooted devices the key can be pulled from the vendor app's data, or captured from
+<code>logcat</code> during pairing. This is more involved — <code>huami-token</code>
+is the easier path.</p>
+
+<h3>Sanity check</h3>
+<p>A valid key is exactly <strong>16 bytes = 32 hex characters</strong>, e.g.
+<code>0123456789abcdef0123456789abcdef</code>. The app rejects anything else
+before it tries to connect.</p>
+
+<h2>What "other information" is realistic</h2>
+<p>Over standard Web Bluetooth you can get:</p>
+<ul>
+    <li><strong>Heart rate (BPM)</strong> — live.</li>
+    <li><strong>RR-intervals → HRV (RMSSD)</strong> — when the sensor reports them
+    (most chest straps do; wrist bands often don't).</li>
+    <li><strong>Sensor contact</strong> quality — for straps that report it.</li>
+    <li><strong>Battery %</strong> — where the device exposes the Battery Service.</li>
+</ul>
+<p>Steps, sleep, SpO₂ and stress are <strong>not</strong> available this way —
+those live behind the phone app's own sync and are out of scope for a browser
+page.</p>
+
+<h2>Troubleshooting</h2>
+<ul>
+    <li><strong>"Band rejected the auth key."</strong> Wrong key, or the band
+    re-paired to Zepp and rotated it. Re-extract with <code>huami-token</code>.</li>
+    <li><strong>"Auth timed out." / can't find the band.</strong> It's probably
+    still bonded to the Zepp app — remove it there, then retry. Make sure the band
+    is awake and near.</li>
+    <li><strong>Nothing happens on iPhone.</strong> Web Bluetooth isn't available
+    in iOS Safari; use Chrome/Edge on desktop or Chrome on Android.</li>
+    <li><strong>The handshake connects but no BPM.</strong> Opcodes can vary by
+    firmware family; the relevant reference is Gadgetbridge's Huami/Mi Band
+    support classes.</li>
+</ul>
+
+<h2>For developers</h2>
+<p>The pure logic (HR-measurement parsing, hex helpers, Huami auth-message
+building, the AES step) lives in <code>js/heartrate.js</code> and is unit-tested:</p>
+<pre><code>node --test</code></pre>
+<p>The Web Bluetooth glue needs a real device and a Chromium browser, so it's
+verified by hand.</p>
+    </article>
+</body>
+</html>

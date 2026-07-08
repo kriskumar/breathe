@@ -1,11 +1,12 @@
 /* Service worker — network-first so updates land on reload, with an offline
  * cache fallback. */
-const CACHE = "breathe-v39";
+const CACHE = "breathe-v40";
 const ASSETS = [
   "./",
   "./index.html",
   "./research.html",
   "./references.html",
+  "./heart-rate.html",
   "./css/styles.css",
   "./css/docs.css",
   "./js/programs.js",
