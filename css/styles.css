@@ -913,3 +913,109 @@ input[type="text"]:focus {
     color: #cabfe8;
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.14) 0%, rgba(196, 113, 245, 0.16) 100%);
 }
+
+/* ---- Heart Rate tab -------------------------------------------------- */
+.hr-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hr-radio {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 400;
+    color: #333;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.hr-radio input { margin-top: 3px; }
+.hr-radio small { color: #888; display: block; }
+
+.hr-readout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 28px 0 20px;
+}
+
+.hr-heart {
+    font-size: 3.2em;
+    line-height: 1;
+    filter: grayscale(0.4);
+    transition: transform 0.15s ease;
+}
+
+.hr-heart.beating {
+    filter: none;
+    animation: hr-pulse 1s ease-in-out infinite;
+}
+
+@keyframes hr-pulse {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.18); }
+    30% { transform: scale(1); }
+}
+
+.hr-bpm-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.hr-bpm {
+    font-size: 3.4em;
+    font-weight: 700;
+    color: #e0396b;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.hr-bpm-unit { font-size: 1em; color: #888; }
+
+.hr-meta {
+    display: flex;
+    gap: 18px;
+    font-size: 0.95em;
+    color: #666;
+}
+
+.hr-metric strong { color: #333; }
+
+.hr-contact {
+    font-size: 0.9em;
+    color: #2e9e5b;
+}
+.hr-contact.bad { color: #d98324; }
+
+.hr-device {
+    font-size: 0.85em;
+    color: #999;
+}
+
+.hr-status {
+    text-align: center;
+    min-height: 1.2em;
+    margin: 6px 0 14px;
+    color: #666;
+    font-size: 0.92em;
+}
+.hr-status-ok { color: #2e9e5b; }
+.hr-status-error { color: #d0455f; }
+
+@media (prefers-reduced-motion: reduce) {
+    .hr-heart.beating { animation: none; }
+}
+
+/* Dark theme */
+[data-theme="dark"] .hr-radio { color: #d8d2ec; }
+[data-theme="dark"] .hr-radio small { color: #8a83a0; }
+[data-theme="dark"] .hr-bpm-unit,
+[data-theme="dark"] .hr-meta,
+[data-theme="dark"] .hr-status { color: #b9b2d0; }
+[data-theme="dark"] .hr-metric strong { color: #ece9f6; }
+[data-theme="dark"] .hr-device { color: #7d7694; }

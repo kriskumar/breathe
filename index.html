@@ -31,6 +31,7 @@
         <div class="tab-bar" role="tablist" aria-label="Sections">
             <button type="button" class="tab-btn active" data-tab="breathe" role="tab" aria-selected="true">🌬️ Breathe</button>
             <button type="button" class="tab-btn" data-tab="meditate" role="tab" aria-selected="false">🧘 Meditate</button>
+            <button type="button" class="tab-btn" data-tab="heart" role="tab" aria-selected="false">❤️ Heart Rate</button>
         </div>
 
         <div class="tab-panel" id="breathePanel">
@@ -239,6 +240,67 @@
             </div>
         </div><!-- /meditatePanel -->
 
+        <div class="tab-panel" id="heartPanel" hidden>
+            <p class="med-note" id="hrUnsupported" hidden>
+                ❤️ Live heart rate needs <strong>Web Bluetooth</strong>, which runs in
+                Chrome or Edge on desktop and Android — not on iPhone/iPad or Firefox.
+                Open this page there to connect a sensor.
+            </p>
+
+            <div id="hrControls">
+                <div class="settings">
+                    <div class="input-group">
+                        <label>Device type</label>
+                        <div class="hr-mode">
+                            <label class="hr-radio">
+                                <input type="radio" name="hrMode" id="hrModeStandard" checked>
+                                <span>Standard HR monitor <small>(chest strap, ring — plug &amp; play)</small></span>
+                            </label>
+                            <label class="hr-radio">
+                                <input type="radio" name="hrMode" id="hrModeAmazfit">
+                                <span>Amazfit / Mi Band <small>(needs the band's auth key)</small></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group" id="hrAuthKeyRow" hidden>
+                        <label for="hrAuthKey">Auth key (32 hex characters)</label>
+                        <input type="text" id="hrAuthKey" placeholder="e.g. 0123456789abcdef0123456789abcdef"
+                               autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40">
+                        <small class="voice-hint">
+                            The Amazfit Band 5 only streams heart rate after an encrypted
+                            handshake. Pull its key from the Zepp / Mi Fit app first —
+                            <a href="docs/heart-rate.md" target="_blank" rel="noopener">how to get it ↗</a>.
+                            The band must be un-paired from Zepp to connect here.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="hr-readout">
+                    <div class="hr-heart" id="hrHeart" aria-hidden="true">❤️</div>
+                    <div class="hr-bpm-wrap">
+                        <span class="hr-bpm" id="hrBpm" aria-live="polite">--</span>
+                        <span class="hr-bpm-unit">bpm</span>
+                    </div>
+                    <div class="hr-meta">
+                        <span class="hr-metric" title="Rough HRV (RMSSD) from RR intervals, when the sensor reports them">
+                            HRV <strong id="hrHrv">–</strong>
+                        </span>
+                        <span class="hr-metric" id="hrBattery" hidden></span>
+                    </div>
+                    <div class="hr-contact" id="hrContact" hidden></div>
+                    <div class="hr-device" id="hrDeviceName"></div>
+                </div>
+
+                <p class="hr-status" id="hrStatus" role="status" aria-live="polite"></p>
+
+                <div class="controls">
+                    <button class="start-btn" id="hrConnectBtn">Connect</button>
+                    <button class="reset-btn" id="hrDisconnectBtn" hidden>Disconnect</button>
+                </div>
+            </div>
+        </div><!-- /heartPanel -->
+
         <div class="info-sections">
             <details class="info" id="helpSection">
                 <summary>❓ How to use</summary>
@@ -292,6 +354,7 @@
 
     <script src="js/programs.js"></script>
     <script src="js/meditations.js"></script>
+    <script src="js/heartrate.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

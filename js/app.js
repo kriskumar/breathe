@@ -46,6 +46,7 @@
     tabButtons: document.querySelectorAll(".tab-btn"),
     breathePanel: document.getElementById("breathePanel"),
     meditatePanel: document.getElementById("meditatePanel"),
+    heartPanel: document.getElementById("heartPanel"),
     meditationSelect: document.getElementById("meditationSelect"),
     meditationDescription: document.getElementById("meditationDescription"),
     medLoopRow: document.getElementById("medLoopRow"),
@@ -629,6 +630,7 @@
     // Leaving a tab stops whatever it was doing.
     if (isRunning) stopSession();
     stopMeditation();
+    if (name !== "heart" && window.HeartRate) window.HeartRate.onLeaveTab();
 
     el.tabButtons.forEach((b) => {
       const on = b.dataset.tab === name;
@@ -637,6 +639,7 @@
     });
     el.breathePanel.hidden = name !== "breathe";
     el.meditatePanel.hidden = name !== "meditate";
+    if (el.heartPanel) el.heartPanel.hidden = name !== "heart";
   }
 
   // ---- Meditate tab: a picker + description box, then Play ----------------
