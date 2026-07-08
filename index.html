@@ -31,6 +31,8 @@
         <div class="tab-bar" role="tablist" aria-label="Sections">
             <button type="button" class="tab-btn active" data-tab="breathe" role="tab" aria-selected="true">🌬️ Breathe</button>
             <button type="button" class="tab-btn" data-tab="meditate" role="tab" aria-selected="false">🧘 Meditate</button>
+            <button type="button" class="tab-btn" data-tab="heart" role="tab" aria-selected="false">❤️ Heart Rate</button>
+            <button type="button" class="tab-btn" data-tab="settings" role="tab" aria-selected="false">⚙️ Settings</button>
         </div>
 
         <div class="tab-panel" id="breathePanel">
@@ -112,81 +114,6 @@
             </div>
         </div>
 
-        <div class="options">
-            <div class="toggle-row">
-                <label for="voiceToggle">🔊 Voice guidance</label>
-                <label class="switch">
-                    <input type="checkbox" id="voiceToggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <p class="program-description" id="voiceUnsupported" style="display:none;">
-                Voice guidance isn't supported in this browser — the visual timer still works.
-            </p>
-
-            <div class="voice-settings" id="voiceSettings">
-                <div class="input-group">
-                    <label for="voiceSelect">Voice</label>
-                    <select id="voiceSelect"></select>
-                    <small class="voice-hint">Prefer a different sound? Pick any voice from the list.</small>
-                </div>
-                <div class="toggle-row">
-                    <label for="voiceCountdown">Speak the countdown</label>
-                    <label class="switch">
-                        <input type="checkbox" id="voiceCountdown">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="range-row">
-                    <label for="voiceRate">Speed</label>
-                    <input type="range" id="voiceRate" min="0.5" max="1.5" step="0.1" value="1">
-                </div>
-                <div class="range-row">
-                    <label for="voiceVolume">Volume</label>
-                    <input type="range" id="voiceVolume" min="0" max="1" step="0.1" value="1">
-                </div>
-            </div>
-
-            <div class="toggle-row">
-                <label for="dingToggle">🔔 Chime each cycle</label>
-                <label class="switch">
-                    <input type="checkbox" id="dingToggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="toggle-row">
-                <label for="toneToggle">🎵 Pacing tones</label>
-                <label class="switch">
-                    <input type="checkbox" id="toneToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="toggle-row" id="vibrateRow" hidden>
-                <label for="vibrateToggle">📳 Vibration cues</label>
-                <label class="switch">
-                    <input type="checkbox" id="vibrateToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="input-group">
-                <label for="ambientSelect">🌊 Ambient sound</label>
-                <select id="ambientSelect">
-                    <option value="none">Off</option>
-                    <option value="ocean">Ocean</option>
-                    <option value="rain">Rain</option>
-                    <option value="drone">Drone</option>
-                </select>
-            </div>
-            <div class="range-row" id="ambientVolumeRow">
-                <label for="ambientVolume">Volume</label>
-                <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
-            </div>
-        </div>
-
         <div class="breathing-circle" id="breathingCircle" role="img" aria-label="Breathing pacer">
             <div class="circle-inner">
                 <div class="instruction" id="instruction" role="status" aria-live="assertive" aria-atomic="true">Ready</div>
@@ -195,6 +122,7 @@
         </div>
 
         <div class="progress" id="progress">Cycle 0 / 0</div>
+        <div class="hr-badge" id="hrBadgeBreathe" hidden aria-live="polite">❤️ <span id="hrBadgeBreatheVal">--</span> bpm</div>
         <div class="completion-message" id="completionMessage">✨ Session Complete! ✨</div>
 
         <div class="controls">
@@ -230,6 +158,8 @@
                 <button class="start-btn" id="medPlayBtn">▶ Play</button>
             </div>
 
+            <div class="hr-badge" id="hrBadgeMeditate" hidden aria-live="polite">❤️ <span id="hrBadgeMeditateVal">--</span> bpm</div>
+
             <div class="now-playing" id="nowPlaying" hidden>
                 <div class="np-info">
                     <div class="np-title" id="npTitle"></div>
@@ -239,6 +169,150 @@
             </div>
         </div><!-- /meditatePanel -->
 
+        <div class="tab-panel" id="heartPanel" hidden>
+            <p class="med-note" id="hrUnsupported" hidden>
+                ❤️ Live heart rate needs <strong>Web Bluetooth</strong>, which runs in
+                Chrome or Edge on desktop and Android — not on iPhone/iPad or Firefox.
+                Open this page there to connect a sensor.
+            </p>
+
+            <div id="hrControls">
+                <div class="settings">
+                    <div class="input-group">
+                        <label>Device type</label>
+                        <div class="hr-mode">
+                            <label class="hr-radio">
+                                <input type="radio" name="hrMode" id="hrModeStandard" checked>
+                                <span>Standard HR monitor <small>(chest strap, ring — plug &amp; play)</small></span>
+                            </label>
+                            <label class="hr-radio">
+                                <input type="radio" name="hrMode" id="hrModeAmazfit">
+                                <span>Amazfit / Mi Band <small>(needs the band's auth key)</small></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group" id="hrAuthKeyRow" hidden>
+                        <label for="hrAuthKey">Auth key (32 hex characters)</label>
+                        <input type="text" id="hrAuthKey" placeholder="e.g. 0123456789abcdef0123456789abcdef"
+                               autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40">
+                        <small class="voice-hint">
+                            The Amazfit Band 5 only streams heart rate after an encrypted
+                            handshake. Pull its key from the Zepp / Mi Fit app first —
+                            <a href="heart-rate.html" target="_blank" rel="noopener">how to get it ↗</a>.
+                            The band must be un-paired from Zepp to connect here.
+                        </small>
+                        <label class="hr-remember">
+                            <input type="checkbox" id="hrRememberKey">
+                            <span>Remember this key on this device
+                                <small>Stored in plain text in this browser only — never sent anywhere.</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="hr-readout">
+                    <div class="hr-heart" id="hrHeart" aria-hidden="true">❤️</div>
+                    <div class="hr-bpm-wrap">
+                        <span class="hr-bpm" id="hrBpm" aria-live="polite">--</span>
+                        <span class="hr-bpm-unit">bpm</span>
+                    </div>
+                    <div class="hr-meta">
+                        <span class="hr-metric" title="Rough HRV (RMSSD) from RR intervals, when the sensor reports them">
+                            HRV <strong id="hrHrv">–</strong>
+                        </span>
+                        <span class="hr-metric" id="hrBattery" hidden></span>
+                    </div>
+                    <div class="hr-contact" id="hrContact" hidden></div>
+                    <div class="hr-device" id="hrDeviceName"></div>
+                </div>
+
+                <p class="hr-status" id="hrStatus" role="status" aria-live="polite"></p>
+
+                <div class="controls">
+                    <button class="start-btn" id="hrConnectBtn">Connect</button>
+                    <button class="reset-btn" id="hrDisconnectBtn" hidden>Disconnect</button>
+                </div>
+            </div>
+        </div><!-- /heartPanel -->
+
+        <div class="tab-panel" id="settingsPanel" hidden>
+            <div class="options">
+                <div class="toggle-row">
+                    <label for="voiceToggle">🔊 Voice guidance</label>
+                    <label class="switch">
+                        <input type="checkbox" id="voiceToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <p class="program-description" id="voiceUnsupported" style="display:none;">
+                    Voice guidance isn't supported in this browser — the visual timer still works.
+                </p>
+
+                <div class="voice-settings" id="voiceSettings">
+                    <div class="input-group">
+                        <label for="voiceSelect">Voice</label>
+                        <select id="voiceSelect"></select>
+                        <small class="voice-hint">Prefer a different sound? Pick any voice from the list.</small>
+                    </div>
+                    <div class="toggle-row">
+                        <label for="voiceCountdown">Speak the countdown</label>
+                        <label class="switch">
+                            <input type="checkbox" id="voiceCountdown">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="range-row">
+                        <label for="voiceRate">Speed</label>
+                        <input type="range" id="voiceRate" min="0.5" max="1.5" step="0.1" value="1">
+                    </div>
+                    <div class="range-row">
+                        <label for="voiceVolume">Volume</label>
+                        <input type="range" id="voiceVolume" min="0" max="1" step="0.1" value="1">
+                    </div>
+                </div>
+
+                <div class="toggle-row">
+                    <label for="dingToggle">🔔 Chime each cycle</label>
+                    <label class="switch">
+                        <input type="checkbox" id="dingToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <label for="toneToggle">🎵 Pacing tones</label>
+                    <label class="switch">
+                        <input type="checkbox" id="toneToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row" id="vibrateRow" hidden>
+                    <label for="vibrateToggle">📳 Vibration cues</label>
+                    <label class="switch">
+                        <input type="checkbox" id="vibrateToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="input-group">
+                    <label for="ambientSelect">🌊 Ambient sound</label>
+                    <select id="ambientSelect">
+                        <option value="none">Off</option>
+                        <option value="ocean">Ocean</option>
+                        <option value="rain">Rain</option>
+                        <option value="drone">Drone</option>
+                    </select>
+                </div>
+                <div class="range-row" id="ambientVolumeRow">
+                    <label for="ambientVolume">Volume</label>
+                    <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
+                </div>
+            </div>
+        </div><!-- /settingsPanel -->
+
         <div class="info-sections">
             <details class="info" id="helpSection">
                 <summary>❓ How to use</summary>
@@ -247,9 +321,10 @@
                         <li><strong>Not sure where to start?</strong> Tap a goal — <strong>Calm, Sleep, Focus,</strong> or <strong>Energy</strong> — to jump to a recommended breath. Or pick any <strong>pranayama</strong> from the dropdown; the note below it says what it's for, and many add a tip on how to do it.</li>
                         <li><strong>Choose a level</strong> — Beginner, Medium, or Advanced. Higher levels run more cycles and/or longer breaths.</li>
                         <li><strong>Press Start.</strong> Follow the circle: it grows as you inhale, holds while you hold, and shrinks as you exhale. The number counts down each phase, and the screen stays awake.</li>
-                        <li><strong>Choose your cues:</strong> 🔊 voice speaks each phase, 🎵 pacing tones give a wordless rise/fall, 🔔 chimes each cycle, 🌊 ambient sound (ocean/rain/drone) plays underneath, and 📳 vibration buzzes each phase (where supported). Turn them all off for a silent, visual-only session. <strong>Reset</strong> starts over.</li>
+                        <li><strong>Choose your cues in ⚙️ Settings:</strong> 🔊 voice speaks each phase, 🎵 pacing tones give a wordless rise/fall, 🔔 chimes each cycle, 🌊 ambient sound (ocean/rain/drone) plays underneath, and 📳 vibration buzzes each phase (where supported). By default only voice is on — turn them all off for a silent, visual-only session. <strong>Reset</strong> starts over.</li>
                         <li><strong>Make it yours:</strong> choose <strong>Custom</strong> to set your own inhale/hold/exhale/sustain and <strong>save</strong> it as a named pattern. Use the 🌗 button (top-right) for light/dark. Your streak and totals show under the controls — kept privately on your device.</li>
                         <li><strong>🧘 Meditate tab:</strong> switch tabs at the top for guided sessions — play a recording (like the Aum chant) or follow a spoken meditation. Tap any item to start, and <strong>Stop</strong> to end it.</li>
+                        <li><strong>❤️ Heart Rate tab (optional):</strong> in Chrome or Edge on desktop/Android you can connect a Bluetooth heart-rate monitor — a chest strap or ring, or an Amazfit / Mi Band with its auth key (<a href="heart-rate.html">setup guide</a>). Once connected, your live pulse appears on the Breathe and Meditate tabs so you can watch it settle as you slow down. (Not available on iPhone/iPad or Firefox.)</li>
                     </ol>
                     <p class="info-note">Tip: keep the breath gentle and never strain — ease off if you feel light-headed. Free, private (no account), and works offline once loaded.</p>
 
@@ -292,6 +367,7 @@
 
     <script src="js/programs.js"></script>
     <script src="js/meditations.js"></script>
+    <script src="js/heartrate.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

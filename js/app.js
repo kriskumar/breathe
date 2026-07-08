@@ -46,6 +46,12 @@
     tabButtons: document.querySelectorAll(".tab-btn"),
     breathePanel: document.getElementById("breathePanel"),
     meditatePanel: document.getElementById("meditatePanel"),
+    heartPanel: document.getElementById("heartPanel"),
+    settingsPanel: document.getElementById("settingsPanel"),
+    hrBadgeBreathe: document.getElementById("hrBadgeBreathe"),
+    hrBadgeBreatheVal: document.getElementById("hrBadgeBreatheVal"),
+    hrBadgeMeditate: document.getElementById("hrBadgeMeditate"),
+    hrBadgeMeditateVal: document.getElementById("hrBadgeMeditateVal"),
     meditationSelect: document.getElementById("meditationSelect"),
     meditationDescription: document.getElementById("meditationDescription"),
     medLoopRow: document.getElementById("medLoopRow"),
@@ -629,6 +635,7 @@
     // Leaving a tab stops whatever it was doing.
     if (isRunning) stopSession();
     stopMeditation();
+    if (name !== "heart" && window.HeartRate) window.HeartRate.onLeaveTab();
 
     el.tabButtons.forEach((b) => {
       const on = b.dataset.tab === name;
@@ -637,6 +644,23 @@
     });
     el.breathePanel.hidden = name !== "breathe";
     el.meditatePanel.hidden = name !== "meditate";
+    if (el.heartPanel) el.heartPanel.hidden = name !== "heart";
+    if (el.settingsPanel) el.settingsPanel.hidden = name !== "settings";
+  }
+
+  // ---- In-session heart-rate badge ---------------------------------------
+  // Mirrors the live reading from the Heart Rate tab onto the Breathe and
+  // Meditate tabs. Shown only once a connected monitor is actually streaming
+  // a reading — never on a mere connection attempt or a dropped link, so its
+  // presence always means a real, working number.
+  function updateHrBadges(snap) {
+    const show = !!(snap && snap.connected && snap.bpm != null);
+    [[el.hrBadgeBreathe, el.hrBadgeBreatheVal], [el.hrBadgeMeditate, el.hrBadgeMeditateVal]]
+      .forEach(([badge, val]) => {
+        if (!badge) return;
+        badge.hidden = !show;
+        if (show && val) val.textContent = String(snap.bpm);
+      });
   }
 
   // ---- Meditate tab: a picker + description box, then Play ----------------
@@ -1224,6 +1248,11 @@
     renderMeditationPicker();
     el.tabButtons.forEach((b) =>
       b.addEventListener("click", () => switchTab(b.dataset.tab)));
+
+    // Mirror the heart-rate reading into the Breathe/Meditate badges.
+    if (window.HeartRate && window.HeartRate.onUpdate) {
+      window.HeartRate.onUpdate(updateHrBadges);
+    }
     el.meditationSelect.addEventListener("change", () => {
       // Switching the picker shouldn't keep the previous session playing.
       if (medState.active) stopMeditation();

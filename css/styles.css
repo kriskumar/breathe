@@ -367,15 +367,17 @@ button {
 /* Tab bar (Breathe / Meditate) */
 .tab-bar {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 24px;
 }
 
 .tab-btn {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
-    padding: 12px;
-    font-size: 0.95em;
+    white-space: nowrap;
+    padding: 11px 10px;
+    font-size: 0.92em;
     font-weight: 600;
     text-transform: none;
     border: 2px solid #ddd;
@@ -385,6 +387,8 @@ button {
     cursor: pointer;
     transition: all 0.2s;
 }
+
+.tab-btn:hover { border-color: #b9a7e6; }
 
 .tab-btn.active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -913,3 +917,173 @@ input[type="text"]:focus {
     color: #cabfe8;
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.14) 0%, rgba(196, 113, 245, 0.16) 100%);
 }
+
+/* ---- Heart Rate tab -------------------------------------------------- */
+.hr-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hr-radio {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 400;
+    color: #333;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.hr-radio input { margin-top: 3px; }
+.hr-radio small { color: #888; display: block; }
+
+.hr-readout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 28px 0 20px;
+}
+
+.hr-heart {
+    font-size: 3.2em;
+    line-height: 1;
+    filter: grayscale(0.4);
+    transition: transform 0.15s ease;
+}
+
+.hr-heart.beating {
+    filter: none;
+    animation: hr-pulse 1s ease-in-out infinite;
+}
+
+@keyframes hr-pulse {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.18); }
+    30% { transform: scale(1); }
+}
+
+.hr-bpm-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.hr-bpm {
+    font-size: 3.4em;
+    font-weight: 700;
+    color: #e0396b;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.hr-bpm-unit { font-size: 1em; color: #888; }
+
+.hr-meta {
+    display: flex;
+    gap: 18px;
+    font-size: 0.95em;
+    color: #666;
+}
+
+.hr-metric strong { color: #333; }
+
+.hr-contact {
+    font-size: 0.9em;
+    color: #2e9e5b;
+}
+.hr-contact.bad { color: #d98324; }
+
+.hr-device {
+    font-size: 0.85em;
+    color: #999;
+}
+
+.hr-status {
+    text-align: center;
+    min-height: 1.2em;
+    margin: 6px 0 14px;
+    color: #666;
+    font-size: 0.92em;
+}
+.hr-status-ok { color: #2e9e5b; }
+.hr-status-error { color: #d0455f; }
+
+@media (prefers-reduced-motion: reduce) {
+    .hr-heart.beating { animation: none; }
+}
+
+/* Dark theme */
+[data-theme="dark"] .hr-radio { color: #d8d2ec; }
+[data-theme="dark"] .hr-radio small { color: #8a83a0; }
+[data-theme="dark"] .hr-bpm-unit,
+[data-theme="dark"] .hr-meta,
+[data-theme="dark"] .hr-status { color: #b9b2d0; }
+[data-theme="dark"] .hr-metric strong { color: #ece9f6; }
+[data-theme="dark"] .hr-device { color: #7d7694; }
+
+/* ---- In-session heart-rate badge (Breathe + Meditate tabs) ----------- */
+.hr-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: fit-content;
+    margin: 12px auto 0;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: #d0455f;
+    background: linear-gradient(135deg, rgba(224, 57, 107, 0.10) 0%, rgba(196, 113, 245, 0.12) 100%);
+    border: 1px solid rgba(224, 57, 107, 0.25);
+    box-shadow: 0 2px 10px rgba(224, 57, 107, 0.10);
+    animation: hr-badge-pulse 1.1s ease-in-out infinite;
+}
+
+.hr-badge[hidden] { display: none; }
+
+.hr-badge span {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.05em;
+    color: #e0396b;
+}
+
+@keyframes hr-badge-pulse {
+    0%, 100% { transform: scale(1); }
+    12% { transform: scale(1.05); }
+    24% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hr-badge { animation: none; }
+}
+
+/* ---- "Remember this key" checkbox (Heart Rate tab) ------------------- */
+.hr-remember {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 12px;
+    cursor: pointer;
+    font-weight: 400;
+    color: #555;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.9em;
+}
+
+.hr-remember input { margin-top: 3px; }
+.hr-remember small { display: block; color: #999; margin-top: 2px; }
+
+/* Dark theme */
+[data-theme="dark"] .hr-badge {
+    color: #f2a7bd;
+    background: linear-gradient(135deg, rgba(224, 57, 107, 0.16) 0%, rgba(196, 113, 245, 0.18) 100%);
+    border-color: rgba(224, 57, 107, 0.35);
+}
+[data-theme="dark"] .hr-badge span { color: #ff7ba0; }
+[data-theme="dark"] .hr-remember { color: #b9b2d0; }
+[data-theme="dark"] .hr-remember small { color: #7d7694; }
