@@ -171,6 +171,7 @@
   // ======================================================================
 
   const supported = !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
+  const KEY_STORE = "breathe.hr.authKey"; // remembered Amazfit/Mi Band key
 
   const el = {};
   const state = {
@@ -181,7 +182,27 @@
     mode: "standard", // or "amazfit"
     rr: [], // recent RR intervals (ms) for a rough HRV readout
     keepAlive: null,
+    lastBpm: null,
+    listeners: [], // in-session badge subscribers (breathe/meditate tabs)
   };
+
+  // Fan out {connected, bpm} to the in-session badges.
+  function emit() {
+    const snap = { connected: state.connected, bpm: state.lastBpm };
+    state.listeners.forEach((cb) => {
+      try { cb(snap); } catch (_) {}
+    });
+  }
+
+  function loadRememberedKey() {
+    try { return localStorage.getItem(KEY_STORE) || ""; } catch (_) { return ""; }
+  }
+  function storeKey(hex) {
+    try { localStorage.setItem(KEY_STORE, hex); } catch (_) {}
+  }
+  function clearStoredKey() {
+    try { localStorage.removeItem(KEY_STORE); } catch (_) {}
+  }
 
   function $(id) {
     return document.getElementById(id);
@@ -217,7 +238,9 @@
 
   function onHrNotification(event) {
     const out = parseHeartRateMeasurement(event.target.value);
+    state.lastBpm = out.bpm;
     showBpm(out.bpm);
+    emit();
     if (out.rrIntervals.length) {
       state.rr.push(...out.rrIntervals);
       state.rr = state.rr.slice(-60);
@@ -360,10 +383,16 @@
       else await startStandard(device);
 
       state.connected = true;
+      // Persist (or forget) the Amazfit key per the "remember" checkbox.
+      if (state.mode === "amazfit") {
+        if (el.rememberKey && el.rememberKey.checked) storeKey(keyHex);
+        else clearStoredKey();
+      }
       setStatus("Connected to " + (device.name || "device") + ".", "ok");
       if (el.deviceName) el.deviceName.textContent = device.name || "";
       if (el.connectBtn) el.connectBtn.hidden = true;
       if (el.disconnectBtn) el.disconnectBtn.hidden = false;
+      emit();
     } catch (e) {
       if (e && e.name === "NotFoundError") {
         setStatus("No device selected.");
@@ -391,7 +420,9 @@
 
   function onDisconnected() {
     state.connected = false;
+    state.lastBpm = null;
     teardown();
+    emit();
     setStatus("Disconnected.", "");
     if (el.connectBtn) el.connectBtn.hidden = false;
     if (el.disconnectBtn) el.disconnectBtn.hidden = true;
@@ -429,6 +460,7 @@
     el.modeAmazfit = $("hrModeAmazfit");
     el.authKeyRow = $("hrAuthKeyRow");
     el.authKey = $("hrAuthKey");
+    el.rememberKey = $("hrRememberKey");
     el.unsupported = $("hrUnsupported");
     el.controls = $("hrControls");
 
@@ -444,6 +476,22 @@
     [el.modeStandard, el.modeAmazfit].forEach((r) => {
       if (r) r.addEventListener("change", syncModeUi);
     });
+
+    // Restore a remembered Amazfit key and default to that mode if we have one.
+    const saved = loadRememberedKey();
+    if (saved && el.authKey) {
+      el.authKey.value = saved;
+      if (el.rememberKey) el.rememberKey.checked = true;
+      if (el.modeAmazfit) el.modeAmazfit.checked = true;
+    }
+    // Unchecking "remember" forgets the stored key straight away.
+    if (el.rememberKey) {
+      el.rememberKey.addEventListener("change", () => {
+        if (!el.rememberKey.checked) clearStoredKey();
+        else if (el.authKey && el.authKey.value.trim()) storeKey(el.authKey.value.trim());
+      });
+    }
+
     syncModeUi();
     setStatus("Ready. Pick a mode and press Connect.");
   }
@@ -453,11 +501,26 @@
     /* Keep the connection alive across tabs; nothing to tear down. */
   }
 
+  // Subscribe to {connected, bpm} updates (used by the in-session badges).
+  // Fires immediately with the current snapshot; returns an unsubscribe fn.
+  function onUpdate(cb) {
+    state.listeners.push(cb);
+    try { cb({ connected: state.connected, bpm: state.lastBpm }); } catch (_) {}
+    return function () {
+      const i = state.listeners.indexOf(cb);
+      if (i !== -1) state.listeners.splice(i, 1);
+    };
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }
 
-  return Object.assign({}, pure, { init, connect, disconnect, onLeaveTab, isSupported: () => supported });
+  return Object.assign({}, pure, {
+    init, connect, disconnect, onLeaveTab, onUpdate,
+    isConnected: () => state.connected,
+    isSupported: () => supported,
+  });
 });

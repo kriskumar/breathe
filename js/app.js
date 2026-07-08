@@ -47,6 +47,11 @@
     breathePanel: document.getElementById("breathePanel"),
     meditatePanel: document.getElementById("meditatePanel"),
     heartPanel: document.getElementById("heartPanel"),
+    settingsPanel: document.getElementById("settingsPanel"),
+    hrBadgeBreathe: document.getElementById("hrBadgeBreathe"),
+    hrBadgeBreatheVal: document.getElementById("hrBadgeBreatheVal"),
+    hrBadgeMeditate: document.getElementById("hrBadgeMeditate"),
+    hrBadgeMeditateVal: document.getElementById("hrBadgeMeditateVal"),
     meditationSelect: document.getElementById("meditationSelect"),
     meditationDescription: document.getElementById("meditationDescription"),
     medLoopRow: document.getElementById("medLoopRow"),
@@ -640,6 +645,21 @@
     el.breathePanel.hidden = name !== "breathe";
     el.meditatePanel.hidden = name !== "meditate";
     if (el.heartPanel) el.heartPanel.hidden = name !== "heart";
+    if (el.settingsPanel) el.settingsPanel.hidden = name !== "settings";
+  }
+
+  // ---- In-session heart-rate badge ---------------------------------------
+  // Mirrors the live reading from the Heart Rate tab onto the Breathe and
+  // Meditate tabs, but only while a monitor is actually connected.
+  function updateHrBadges(snap) {
+    const show = !!(snap && snap.connected);
+    const text = snap && snap.bpm != null ? String(snap.bpm) : "--";
+    [[el.hrBadgeBreathe, el.hrBadgeBreatheVal], [el.hrBadgeMeditate, el.hrBadgeMeditateVal]]
+      .forEach(([badge, val]) => {
+        if (!badge) return;
+        badge.hidden = !show;
+        if (val) val.textContent = text;
+      });
   }
 
   // ---- Meditate tab: a picker + description box, then Play ----------------
@@ -1227,6 +1247,11 @@
     renderMeditationPicker();
     el.tabButtons.forEach((b) =>
       b.addEventListener("click", () => switchTab(b.dataset.tab)));
+
+    // Mirror the heart-rate reading into the Breathe/Meditate badges.
+    if (window.HeartRate && window.HeartRate.onUpdate) {
+      window.HeartRate.onUpdate(updateHrBadges);
+    }
     el.meditationSelect.addEventListener("change", () => {
       // Switching the picker shouldn't keep the previous session playing.
       if (medState.active) stopMeditation();

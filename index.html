@@ -32,6 +32,7 @@
             <button type="button" class="tab-btn active" data-tab="breathe" role="tab" aria-selected="true">🌬️ Breathe</button>
             <button type="button" class="tab-btn" data-tab="meditate" role="tab" aria-selected="false">🧘 Meditate</button>
             <button type="button" class="tab-btn" data-tab="heart" role="tab" aria-selected="false">❤️ Heart Rate</button>
+            <button type="button" class="tab-btn" data-tab="settings" role="tab" aria-selected="false">⚙️ Settings</button>
         </div>
 
         <div class="tab-panel" id="breathePanel">
@@ -113,81 +114,6 @@
             </div>
         </div>
 
-        <div class="options">
-            <div class="toggle-row">
-                <label for="voiceToggle">🔊 Voice guidance</label>
-                <label class="switch">
-                    <input type="checkbox" id="voiceToggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <p class="program-description" id="voiceUnsupported" style="display:none;">
-                Voice guidance isn't supported in this browser — the visual timer still works.
-            </p>
-
-            <div class="voice-settings" id="voiceSettings">
-                <div class="input-group">
-                    <label for="voiceSelect">Voice</label>
-                    <select id="voiceSelect"></select>
-                    <small class="voice-hint">Prefer a different sound? Pick any voice from the list.</small>
-                </div>
-                <div class="toggle-row">
-                    <label for="voiceCountdown">Speak the countdown</label>
-                    <label class="switch">
-                        <input type="checkbox" id="voiceCountdown">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="range-row">
-                    <label for="voiceRate">Speed</label>
-                    <input type="range" id="voiceRate" min="0.5" max="1.5" step="0.1" value="1">
-                </div>
-                <div class="range-row">
-                    <label for="voiceVolume">Volume</label>
-                    <input type="range" id="voiceVolume" min="0" max="1" step="0.1" value="1">
-                </div>
-            </div>
-
-            <div class="toggle-row">
-                <label for="dingToggle">🔔 Chime each cycle</label>
-                <label class="switch">
-                    <input type="checkbox" id="dingToggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="toggle-row">
-                <label for="toneToggle">🎵 Pacing tones</label>
-                <label class="switch">
-                    <input type="checkbox" id="toneToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="toggle-row" id="vibrateRow" hidden>
-                <label for="vibrateToggle">📳 Vibration cues</label>
-                <label class="switch">
-                    <input type="checkbox" id="vibrateToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="input-group">
-                <label for="ambientSelect">🌊 Ambient sound</label>
-                <select id="ambientSelect">
-                    <option value="none">Off</option>
-                    <option value="ocean">Ocean</option>
-                    <option value="rain">Rain</option>
-                    <option value="drone">Drone</option>
-                </select>
-            </div>
-            <div class="range-row" id="ambientVolumeRow">
-                <label for="ambientVolume">Volume</label>
-                <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
-            </div>
-        </div>
-
         <div class="breathing-circle" id="breathingCircle" role="img" aria-label="Breathing pacer">
             <div class="circle-inner">
                 <div class="instruction" id="instruction" role="status" aria-live="assertive" aria-atomic="true">Ready</div>
@@ -196,6 +122,7 @@
         </div>
 
         <div class="progress" id="progress">Cycle 0 / 0</div>
+        <div class="hr-badge" id="hrBadgeBreathe" hidden aria-live="polite">❤️ <span id="hrBadgeBreatheVal">--</span> bpm</div>
         <div class="completion-message" id="completionMessage">✨ Session Complete! ✨</div>
 
         <div class="controls">
@@ -230,6 +157,8 @@
             <div class="controls">
                 <button class="start-btn" id="medPlayBtn">▶ Play</button>
             </div>
+
+            <div class="hr-badge" id="hrBadgeMeditate" hidden aria-live="polite">❤️ <span id="hrBadgeMeditateVal">--</span> bpm</div>
 
             <div class="now-playing" id="nowPlaying" hidden>
                 <div class="np-info">
@@ -273,6 +202,12 @@
                             <a href="docs/heart-rate.md" target="_blank" rel="noopener">how to get it ↗</a>.
                             The band must be un-paired from Zepp to connect here.
                         </small>
+                        <label class="hr-remember">
+                            <input type="checkbox" id="hrRememberKey">
+                            <span>Remember this key on this device
+                                <small>Stored in plain text in this browser only — never sent anywhere.</small>
+                            </span>
+                        </label>
                     </div>
                 </div>
 
@@ -300,6 +235,83 @@
                 </div>
             </div>
         </div><!-- /heartPanel -->
+
+        <div class="tab-panel" id="settingsPanel" hidden>
+            <div class="options">
+                <div class="toggle-row">
+                    <label for="voiceToggle">🔊 Voice guidance</label>
+                    <label class="switch">
+                        <input type="checkbox" id="voiceToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <p class="program-description" id="voiceUnsupported" style="display:none;">
+                    Voice guidance isn't supported in this browser — the visual timer still works.
+                </p>
+
+                <div class="voice-settings" id="voiceSettings">
+                    <div class="input-group">
+                        <label for="voiceSelect">Voice</label>
+                        <select id="voiceSelect"></select>
+                        <small class="voice-hint">Prefer a different sound? Pick any voice from the list.</small>
+                    </div>
+                    <div class="toggle-row">
+                        <label for="voiceCountdown">Speak the countdown</label>
+                        <label class="switch">
+                            <input type="checkbox" id="voiceCountdown">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="range-row">
+                        <label for="voiceRate">Speed</label>
+                        <input type="range" id="voiceRate" min="0.5" max="1.5" step="0.1" value="1">
+                    </div>
+                    <div class="range-row">
+                        <label for="voiceVolume">Volume</label>
+                        <input type="range" id="voiceVolume" min="0" max="1" step="0.1" value="1">
+                    </div>
+                </div>
+
+                <div class="toggle-row">
+                    <label for="dingToggle">🔔 Chime each cycle</label>
+                    <label class="switch">
+                        <input type="checkbox" id="dingToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <label for="toneToggle">🎵 Pacing tones</label>
+                    <label class="switch">
+                        <input type="checkbox" id="toneToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row" id="vibrateRow" hidden>
+                    <label for="vibrateToggle">📳 Vibration cues</label>
+                    <label class="switch">
+                        <input type="checkbox" id="vibrateToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="input-group">
+                    <label for="ambientSelect">🌊 Ambient sound</label>
+                    <select id="ambientSelect">
+                        <option value="none">Off</option>
+                        <option value="ocean">Ocean</option>
+                        <option value="rain">Rain</option>
+                        <option value="drone">Drone</option>
+                    </select>
+                </div>
+                <div class="range-row" id="ambientVolumeRow">
+                    <label for="ambientVolume">Volume</label>
+                    <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
+                </div>
+            </div>
+        </div><!-- /settingsPanel -->
 
         <div class="info-sections">
             <details class="info" id="helpSection">
