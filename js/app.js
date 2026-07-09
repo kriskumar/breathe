@@ -529,6 +529,10 @@
       };
     }
     const lvl = program.levels[level];
+    // Guided programs define an explicit phase sequence instead of a ratio.
+    if (program.sequence) {
+      return { pre: program.pre, cycles: lvl.cycle, sequence: program.sequence };
+    }
     const unit = program.unit;
     const durations = {
       inhale: lvl.ratio[0] * unit,
@@ -568,6 +572,19 @@
     const steps = [];
     if (settings.pre > 0) {
       steps.push({ key: "prep", label: "Settle in", say: "Find a comfortable seat, or lie down on your back, and settle in.", seconds: settings.pre, cycle: 0 });
+    }
+    // Guided sequence: repeat the explicit step list each cycle.
+    if (settings.sequence) {
+      for (let c = 1; c <= settings.cycles; c++) {
+        settings.sequence.forEach((s, i) => {
+          steps.push({
+            key: s.key, label: s.label, say: s.say, seconds: s.seconds,
+            scale: s.scale, grow: s.grow, cycle: c,
+            endsCycle: i === settings.sequence.length - 1,
+          });
+        });
+      }
+      return steps;
     }
     for (let c = 1; c <= settings.cycles; c++) {
       PHASE_META.forEach((meta) => {
@@ -862,7 +879,7 @@
 
     // Visuals
     el.circle.className = "breathing-circle phase-" + step.key;
-    setCircleScale(step.key, step.seconds);
+    setCircleScale(step);
     el.instruction.textContent = step.label;
 
     // Flush any speech still queued from the previous phase so the voice can't
@@ -886,20 +903,25 @@
 
   // Drive the circle to expand on inhale, contract on exhale, and hold size
   // during retains/sustains. Transition time matches the phase length.
-  function setCircleScale(key, seconds) {
-    let target = el.circle.style.transform;
-    if (key === "inhale") target = "scale(1.5)";
-    else if (key === "inhale2") target = "scale(1.65)";   // the top-up sip
-    else if (key === "exhale") target = "scale(1)";
-    else if (key === "retain") target = "scale(1.5)";
-    else if (key === "sustain") target = "scale(1)";
-    else if (key === "prep") target = "scale(1)";
+  function setCircleScale(step) {
+    const key = step.key;
+    let target = el.circle.style.transform || "scale(1)";
+    let moving = false;
+    if (step.scale != null) {
+      // Guided sequence: an explicit target size; `grow` marks a timed change
+      // (inhale/exhale), while holds keep the previous size.
+      target = "scale(" + step.scale + ")";
+      moving = !!step.grow;
+    } else if (key === "inhale") { target = "scale(1.5)"; moving = true; }
+    else if (key === "inhale2") { target = "scale(1.65)"; moving = true; }   // the top-up sip
+    else if (key === "exhale") { target = "scale(1)"; moving = true; }
+    else if (key === "retain") { target = "scale(1.5)"; }
+    else if (key === "sustain") { target = "scale(1)"; }
+    else if (key === "prep") { target = "scale(1)"; }
 
-    if (key === "inhale" || key === "exhale" || key === "inhale2") {
-      el.circle.style.transition = `transform ${seconds}s ease-in-out`;
-    } else {
-      el.circle.style.transition = "transform 0.3s ease-in-out";
-    }
+    el.circle.style.transition = moving
+      ? `transform ${step.seconds}s ease-in-out`
+      : "transform 0.3s ease-in-out";
     // Force the new transition to apply before changing transform.
     requestAnimationFrame(() => { el.circle.style.transform = target; });
   }

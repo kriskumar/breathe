@@ -45,6 +45,28 @@ const PROGRAMS = [
     },
   },
   {
+    id: "awakening-breath",
+    name: "Awakening Breath",
+    description: "A slow, guided breath that opens the eyes in stages as you fill, and softens them closed as you empty — like a sunrise, then a sunset.",
+    hint: "Begin with your eyes gently closed. As you breathe in, let them open halfway, then fully; as you breathe out, let them come half closed, then fully closed. Move slowly and let the eyes simply follow the breath, without any strain.",
+    pre: 7,
+    sequence: [
+      { key: "inhale",  label: "Eyes ½ open",   say: "Breathe in slowly, and let your eyes open halfway.", seconds: 5, scale: 1.4,  grow: true },
+      { key: "retain",  label: "Hold",          say: "Hold, eyes softly half open.",                       seconds: 5, scale: 1.4 },
+      { key: "inhale",  label: "Eyes open",      say: "Breathe in deeper, and let your eyes open fully.",   seconds: 5, scale: 1.65, grow: true },
+      { key: "retain",  label: "Hold",          say: "Hold, eyes fully open.",                             seconds: 5, scale: 1.65 },
+      { key: "exhale",  label: "Breathe out",    say: "Breathe out slowly.",                                seconds: 5, scale: 1.3,  grow: true },
+      { key: "sustain", label: "Eyes ½ closed",  say: "Hold, and let your eyes come half closed.",          seconds: 5, scale: 1.3 },
+      { key: "exhale",  label: "Breathe out",    say: "Breathe out fully.",                                 seconds: 5, scale: 1.0,  grow: true },
+      { key: "sustain", label: "Eyes closed",    say: "Rest, eyes gently closed.",                          seconds: 5, scale: 1.0 },
+    ],
+    levels: {
+      beginner: { cycle: 2 },
+      medium:   { cycle: 3 },
+      advanced: { cycle: 4 },
+    },
+  },
+  {
     id: "clear-mind",
     name: "Clear Mind",
     description: "Short inhale with a long, slow exhale to clear and settle the mind.",
@@ -400,6 +422,7 @@ const PHASE_META = [
 const CLOSINGS = {
   "simple-mind": "Rest here a moment. The mind is quieter now — carry this ease with you.",
   "cyclic-sighing": "Feel the calm settle through you. Let that long, soft exhale stay with you a while.",
+  "awakening-breath": "Rest now with the eyes softly closed. Carry this slow, rising calm gently with you.",
   "clear-mind": "Notice the space you've made. Let your thoughts drift by like passing clouds.",
   "relax1": "You are softer now. Let the body stay heavy and at ease a moment longer.",
   "relax2": "Let the stillness deepen. Whenever you're ready, drift gently back — or into sleep.",
