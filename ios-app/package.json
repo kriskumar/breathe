@@ -1,0 +1,27 @@
+{
+  "name": "soham-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "iOS (Capacitor) wrapper for the Soham breathing PWA — reuses the web app unchanged and layers native BLE, haptics, and background audio on top.",
+  "type": "module",
+  "scripts": {
+    "sync-web": "node scripts/sync-web.mjs",
+    "bundle-native": "esbuild src/native/index.js --bundle --format=iife --outfile=www/native/ios-shims.js",
+    "build": "npm run sync-web && npm run bundle-native",
+    "cap:add": "cap add ios",
+    "cap:sync": "npm run build && cap sync ios",
+    "cap:open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/haptics": "^6.0.1",
+    "@capacitor/ios": "^6.1.2",
+    "@capacitor-community/bluetooth-le": "^6.0.1",
+    "@capacitor-community/keep-awake": "^5.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "esbuild": "^0.23.1"
+  }
+}
