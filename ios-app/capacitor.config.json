@@ -1,0 +1,19 @@
+{
+  "appId": "org.soham.breathe",
+  "appName": "Soham",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#667eea"
+  },
+  "plugins": {
+    "BluetoothLe": {
+      "displayStrings": {
+        "scanning": "Looking for heart-rate monitors…",
+        "cancel": "Cancel",
+        "availableDevices": "Nearby monitors",
+        "noDeviceFound": "No heart-rate monitor found"
+      }
+    }
+  }
+}
