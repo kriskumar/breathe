@@ -291,7 +291,7 @@ const PROGRAMS = [
     id: "bhramari",
     name: "Bhramari (Humming)",
     description: "Humming-bee breath: a silent inhale, then a long humming exhale to soothe the mind.",
-    hint: "On each exhale, gently close your lips, relax your jaw, and make a soft, steady low \"mmmm\" — like a humming bee. Keep the sound smooth and even for the whole out-breath, and rest your attention on the gentle vibration in your head and chest. Inhale quietly through the nose.",
+    hint: "Sit comfortably and keep your spine straight. On each exhale, gently close your lips, relax your jaw, and make a soft, steady low \"mmmm\" — like a humming bee. Keep the sound smooth and even for the whole out-breath, and rest your attention on the gentle vibration in your head and chest. Inhale quietly through the nose.",
     unit: 1,
     pre: 7,
     levels: {
@@ -304,7 +304,7 @@ const PROGRAMS = [
     id: "nadi-shodhana",
     name: "Nadi Shodhana (Alternate Nostril)",
     description: "Alternate-nostril breathing to balance and calm the nervous system.",
-    hint: "With the right hand, use the thumb and ring finger to close one nostril at a time. Inhale through the left nostril; close it and exhale through the right. Inhale through the right; close it and exhale through the left — that is one round. Keep the breath smooth, slow and silent.",
+    hint: "Sit comfortably and keep your spine straight. With the right hand, use the thumb and ring finger to close one nostril at a time. Inhale through the left nostril; close it and exhale through the right. Inhale through the right; close it and exhale through the left — that is one round. Keep the breath smooth, slow and silent.",
     unit: 1,
     pre: 7,
     levels: {
@@ -317,7 +317,7 @@ const PROGRAMS = [
     id: "ujjayi",
     name: "Ujjayi (Ocean Breath)",
     description: "Slow, even breathing with a soft ocean-like sound to steady the mind.",
-    hint: "Breathe only through the nose. Slightly constrict the back of the throat so the breath makes a quiet ocean-like \"haaa\" sound on both the in-breath and the out-breath. Keep it smooth, even and unforced, as if gently fogging a mirror with the mouth closed.",
+    hint: "Sit comfortably and keep your spine straight. Breathe only through the nose. Slightly constrict the back of the throat so the breath makes a quiet ocean-like \"haaa\" sound on both the in-breath and the out-breath. Keep it smooth, even and unforced, as if gently fogging a mirror with the mouth closed.",
     unit: 1,
     pre: 7,
     levels: {
@@ -330,7 +330,7 @@ const PROGRAMS = [
     id: "dirga",
     name: "Dirga (Three-Part Breath)",
     description: "Deep three-part breathing that fills the belly, ribs and chest to ground and relax.",
-    hint: "Inhale in three smooth, continuous stages — first letting the belly rise, then the ribs widen, then the upper chest fill. Exhale in reverse: the chest empties, then the ribs, then the belly draws in last. Keep the whole breath slow and unbroken.",
+    hint: "Sit comfortably and keep your spine straight. Inhale in three smooth, continuous stages — first letting the belly rise, then the ribs widen, then the upper chest fill. Exhale in reverse: the chest empties, then the ribs, then the belly draws in last. Keep the whole breath slow and unbroken.",
     unit: 1,
     pre: 7,
     levels: {
@@ -343,7 +343,7 @@ const PROGRAMS = [
     id: "sitali",
     name: "Sitali (Cooling Breath)",
     description: "A cooling inhale through the tongue to ease heat, agitation and stress.",
-    hint: "Curl the sides of your tongue into a tube and inhale slowly through it (if you can't curl your tongue, purse your lips instead) — the incoming air feels cool. Then close the mouth and exhale gently through the nose. Cooling and calming when you feel hot or irritated.",
+    hint: "Sit comfortably and keep your spine straight. Curl the sides of your tongue into a tube and inhale slowly through it (if you can't curl your tongue, purse your lips instead) — the incoming air feels cool. Then close the mouth and exhale gently through the nose. Cooling and calming when you feel hot or irritated.",
     unit: 1,
     pre: 7,
     levels: {
@@ -356,7 +356,7 @@ const PROGRAMS = [
     id: "triangle",
     name: "Triangle Breathing",
     description: "Equal inhale, hold and exhale — a simpler cousin of box breathing for steady focus.",
-    hint: "Three equal sides: breathe in, hold the breath gently in, then breathe out — each for the same count, with no pause at the bottom. Breathe through the nose and keep each side smooth and even.",
+    hint: "Sit comfortably and keep your spine straight. Three equal sides: breathe in, hold the breath gently in, then breathe out — each for the same count, with no pause at the bottom. Breathe through the nose and keep each side smooth and even.",
     unit: 1,
     pre: 7,
     levels: {
