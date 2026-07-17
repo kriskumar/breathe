@@ -531,7 +531,7 @@
     const lvl = program.levels[level];
     // Guided programs define an explicit phase sequence instead of a ratio.
     if (program.sequence) {
-      return { pre: program.pre, cycles: lvl.cycle, sequence: program.sequence };
+      return { pre: program.pre, cycles: lvl.cycle, sequence: program.sequence, prepSay: program.prepSay };
     }
     const unit = program.unit;
     const durations = {
@@ -552,7 +552,7 @@
       durations.sustain = 0;
       durations.inhale2 = 0;
     }
-    return { pre: program.pre, cycles: lvl.cycle, durations: durations };
+    return { pre: program.pre, cycles: lvl.cycle, durations: durations, prepSay: program.prepSay };
   }
 
   function clampInt(v, min, max, fallback) {
@@ -571,7 +571,8 @@
   function buildSchedule(settings) {
     const steps = [];
     if (settings.pre > 0) {
-      steps.push({ key: "prep", label: "Settle in", say: "Find a comfortable seat, or lie down on your back, and settle in.", seconds: settings.pre, cycle: 0 });
+      const prepSay = settings.prepSay || "Find a comfortable seat, or lie down on your back, and settle in.";
+      steps.push({ key: "prep", label: "Settle in", say: prepSay, seconds: settings.pre, cycle: 0 });
     }
     // Guided sequence: repeat the explicit step list each cycle.
     if (settings.sequence) {
