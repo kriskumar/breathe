@@ -96,9 +96,15 @@
   // A soft zen / singing-bowl bell: a fundamental plus a few inharmonic
   // partials, each with its own gentle attack and long exponential decay.
   function playDing() {
+    scheduleDingAt(ensureAudio().currentTime);
+  }
+
+  // Schedule the bell at an absolute AudioContext time. `collector`, when
+  // given, receives the oscillators so a background schedule can be cancelled.
+  function scheduleDingAt(when, collector) {
     if (!el.dingToggle.checked) return;
     const ctx = ensureAudio();
-    const now = ctx.currentTime;
+    const now = when;
 
     const master = ctx.createGain();
     master.gain.value = 0.5;
@@ -124,16 +130,26 @@
       gain.connect(master);
       osc.start(now);
       osc.stop(now + p.decay + 0.1);
+      if (collector) collector.push(osc);
     });
   }
 
   // ---- Pacing tones: a short cue at each phase, as a non-verbal option ----
   // inhale rises, exhale falls, holds are a soft mid note.
   function playPhaseTone(key) {
+    scheduleToneAt(key, ensureAudio().currentTime);
+  }
+
+  // Schedule a phase tone at an absolute AudioContext time. Scheduling on the
+  // audio clock (rather than firing from the JS timer) lets the tones keep
+  // sounding while the screen is locked, when timers are frozen. `collector`,
+  // when given, receives the oscillator so a background schedule can be
+  // cancelled on return.
+  function scheduleToneAt(key, when, collector) {
     if (!el.toneToggle || !el.toneToggle.checked) return;
     if (key === "prep") return;
     const ctx = ensureAudio();
-    const now = ctx.currentTime;
+    const now = when;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
@@ -150,6 +166,7 @@
     gain.connect(ctx.destination);
     osc.start(now);
     osc.stop(now + 0.5);
+    if (collector) collector.push(osc);
   }
 
   // ---- Ambient soundscape (synthesised, no asset files) ------------------
@@ -630,6 +647,8 @@
     el.controlBtn.textContent = "Stop";
     setControlsDisabled(true);
     acquireWakeLock();
+    startKeepAlive();
+    setupMediaSession();
     startAmbient();
 
     // A user gesture (the Start click) is required to unlock audio on mobile;
@@ -872,23 +891,157 @@
     }
   }
 
-  function enterPhase(step) {
-    lastSpokenCount = null;
-    phaseEndTime = performance.now() + step.seconds * 1000;
+  // ---- Background / locked-screen playback -------------------------------
+  // The wake lock only prevents *auto*-lock; a manual power-button lock still
+  // suspends the AudioContext (silencing tones + ambient), pauses speech and
+  // freezes the JS timer. To keep the breath going in a pocket we:
+  //   1. hold a silent, looping <audio> element so iOS keeps the audio session
+  //      (and thus the AudioContext) alive while locked;
+  //   2. pre-schedule the pacing tones + cycle bells on the audio clock when
+  //      the page is hidden, so they still sound though the timer is frozen;
+  //   3. advertise the session via the Media Session API for the lock screen.
+  // (Voice cues use speechSynthesis, which iOS always pauses when locked, so
+  // only tones/ambient carry through — enable tones for a pocketed session.)
+  let keepAlive = null;
+  let keepAliveUri = null;
+  let bgNodes = [];
 
+  // A 1-second silent WAV as a data URI — no asset file, works offline.
+  function silentWavUri() {
+    if (keepAliveUri) return keepAliveUri;
+    const rate = 8000, samples = rate, dataSize = samples * 2;
+    const buf = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buf);
+    const put = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+    put(0, "RIFF"); view.setUint32(4, 36 + dataSize, true); put(8, "WAVE");
+    put(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true); view.setUint32(24, rate, true);
+    view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true); put(36, "data"); view.setUint32(40, dataSize, true);
+    // PCM samples are already zero (silent).
+    let bin = "";
+    const bytes = new Uint8Array(buf);
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    keepAliveUri = "data:audio/wav;base64," + btoa(bin);
+    return keepAliveUri;
+  }
+
+  function startKeepAlive() {
+    try {
+      if (!keepAlive) {
+        keepAlive = new Audio(silentWavUri());
+        keepAlive.loop = true;
+        keepAlive.setAttribute("aria-hidden", "true");
+        keepAlive.style.display = "none";
+        // In the DOM iOS is more reliable about keeping the audio session (and
+        // the Now Playing controls) attached to this element.
+        document.body.appendChild(keepAlive);
+      }
+      keepAlive.currentTime = 0;
+      const p = keepAlive.play();
+      if (p && p.catch) p.catch(() => { /* blocked outside a gesture — ignore */ });
+    } catch (e) { /* Audio unavailable — ignore */ }
+  }
+
+  function stopKeepAlive() {
+    if (keepAlive) { try { keepAlive.pause(); } catch (e) { /* ignore */ } }
+  }
+
+  function setupMediaSession() {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      const program = getProgram();
+      const title = program ? program.name : "Breathe";
+      if (window.MediaMetadata) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title,
+          artist: "Breathe",
+          album: "pranaapp.org",
+          artwork: [{ src: "icon-180.png", sizes: "180x180", type: "image/png" }],
+        });
+      }
+      navigator.mediaSession.playbackState = "playing";
+      navigator.mediaSession.setActionHandler("pause", () => stopSession());
+      navigator.mediaSession.setActionHandler("stop", () => stopSession());
+      navigator.mediaSession.setActionHandler("play", () => {});
+    } catch (e) { /* partial support — ignore */ }
+  }
+
+  function clearMediaSession() {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.playbackState = "none";
+      navigator.mediaSession.metadata = null;
+      ["pause", "stop", "play"].forEach((a) => {
+        try { navigator.mediaSession.setActionHandler(a, null); } catch (e) { /* ignore */ }
+      });
+    } catch (e) { /* ignore */ }
+  }
+
+  // Pre-schedule the pacing tones + cycle bells for every phase still to come,
+  // anchored to the audio clock so they sound even while the timer is frozen.
+  function scheduleBackgroundCues() {
+    cancelBackgroundCues();
+    if (!isRunning) return;
+    const ctx = ensureAudio();
+    // When the next phase begins, in AudioContext seconds.
+    let t = ctx.currentTime + Math.max(0, (phaseEndTime - performance.now()) / 1000);
+    for (let i = stepIndex + 1; i < schedule.length; i++) {
+      const step = schedule[i];
+      if (schedule[i - 1].endsCycle) scheduleDingAt(t, bgNodes);
+      scheduleToneAt(step.key, t, bgNodes);
+      t += step.seconds;
+    }
+  }
+
+  function cancelBackgroundCues() {
+    bgNodes.forEach((n) => { try { n.stop(); } catch (e) { /* already done */ } });
+    bgNodes = [];
+  }
+
+  // Returning to a session after the timer was frozen (screen locked): jump the
+  // schedule forward to the phase we should be in now, updating visuals only —
+  // no burst of cues for the phases that elapsed while away.
+  function resyncSchedule() {
+    if (!isRunning) return;
+    while (stepIndex < schedule.length - 1 && phaseEndTime - performance.now() <= 0) {
+      stepIndex++;
+      const step = schedule[stepIndex];
+      if (step.cycle > 0) currentCycle = step.cycle;
+      phaseEndTime += step.seconds * 1000;
+    }
+    if (stepIndex >= schedule.length - 1 && phaseEndTime - performance.now() <= 0) {
+      completeSession();
+      return;
+    }
+    renderPhase(schedule[stepIndex], true);
+  }
+
+  function enterPhase(step) {
+    phaseEndTime = performance.now() + step.seconds * 1000;
     if (step.cycle > 0) currentCycle = step.cycle;
+    renderPhase(step, false);
+  }
+
+  // Render a phase's visuals and (unless `silent`) its cues. `silent` is used
+  // when resyncing after a locked screen: we jump the display to the right
+  // phase without replaying cues the sleeper already heard from the audio clock.
+  function renderPhase(step, silent) {
+    lastSpokenCount = null;
 
     // Visuals
     el.circle.className = "breathing-circle phase-" + step.key;
     setCircleScale(step);
     el.instruction.textContent = step.label;
 
-    // Flush any speech still queued from the previous phase so the voice can't
-    // fall behind the on-screen timer, then announce this phase by name.
-    if (ttsSupported) window.speechSynthesis.cancel();
-    speak(step.say);
-    playPhaseTone(step.key);
-    vibratePhase(step.key);
+    if (!silent) {
+      // Flush any speech still queued from the previous phase so the voice can't
+      // fall behind the on-screen timer, then announce this phase by name.
+      if (ttsSupported) window.speechSynthesis.cancel();
+      speak(step.say);
+      playPhaseTone(step.key);
+      vibratePhase(step.key);
+    }
 
     updateDisplay(Math.ceil(step.seconds));
   }
@@ -969,6 +1122,9 @@
   function completeSession() {
     stopTimers();
     stopAmbient();
+    cancelBackgroundCues();
+    stopKeepAlive();
+    clearMediaSession();
     isRunning = false;
     el.controlBtn.textContent = "Start";
     setControlsDisabled(false);
@@ -1005,6 +1161,9 @@
   function stopSession() {
     stopTimers();
     stopAmbient();
+    cancelBackgroundCues();
+    stopKeepAlive();
+    clearMediaSession();
     releaseWakeLock();
     cancelSpeech();
     isRunning = false;
@@ -1044,6 +1203,9 @@
   function resetSession() {
     stopTimers();
     stopAmbient();
+    cancelBackgroundCues();
+    stopKeepAlive();
+    clearMediaSession();
     releaseWakeLock();
     cancelSpeech();
     isRunning = false;
@@ -1320,12 +1482,27 @@
       });
     }
 
-    // iOS releases the wake lock when the tab is hidden; re-acquire it when the
-    // user returns mid-session.
+    // When the screen locks / app backgrounds, the JS timer freezes — so
+    // pre-schedule the remaining tones on the audio clock (kept alive by the
+    // silent <audio>) so the breath keeps sounding. On return, cancel those and
+    // resync the display to the phase we should now be in, then re-acquire the
+    // wake lock (iOS releases it while hidden).
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && (isRunning || medState.active) && !wakeLock) {
-        acquireWakeLock();
+      if (document.visibilityState === "hidden") {
+        if (isRunning) {
+          scheduleBackgroundCues();
+          stopTimers();           // hand pacing to the audio clock while away
+        }
+        return;
       }
+      // visible again
+      if (isRunning) {
+        ensureAudio();            // resume a context iOS suspended while locked
+        cancelBackgroundCues();
+        resyncSchedule();
+        if (isRunning && !tickTimer) tickTimer = setInterval(tick, 100);
+      }
+      if ((isRunning || medState.active) && !wakeLock) acquireWakeLock();
     });
   }
 
